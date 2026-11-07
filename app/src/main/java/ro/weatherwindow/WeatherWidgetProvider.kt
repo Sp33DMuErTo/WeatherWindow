@@ -152,7 +152,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 intArrayOf(R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6).forEach { id ->
                     views.setTextViewText(id, "--\n--°/--°\n—\n--%")
                 }
-                applyTextSizes(context, views, manager.getAppWidgetOptions(id))
+                applyTextSizes(context, views, AppWidgetManager.getInstance(context).getAppWidgetOptions(id))
                 weatherBackground(context, 3)?.let { views.setImageViewBitmap(R.id.weather_background, it) }
                 applyBackgroundOpacity(context, views)
                 val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
