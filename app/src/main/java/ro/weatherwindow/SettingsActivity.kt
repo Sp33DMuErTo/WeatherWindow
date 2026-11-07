@@ -301,56 +301,117 @@ class SettingsActivity : Activity() {
     private fun showCustomTextColorDialog(onApplied: () -> Unit) {
         val existing = if (prefs.getBoolean("text_color_enabled", false))
             prefs.getInt("text_color", Color.WHITE) else Color.WHITE
+        val hsv = FloatArray(3)
+        Color.colorToHSV(existing, hsv)
         var chosenColor = existing
+        var brightness = hsv[2]
+
         val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(10), dp(8), dp(10), dp(4))
+        }
+        val selectionRow = LinearLayout(this).apply {
             orientation = LinearLayout.HORIZONTAL
             gravity = android.view.Gravity.CENTER_VERTICAL
-            setPadding(dp(8), dp(8), dp(8), dp(8))
         }
-        val sample = TextView(this).apply {
-            text = "Aa"
-            textSize = 34f
-            typeface = Typeface.DEFAULT_BOLD
-            gravity = android.view.Gravity.CENTER
-            setTextColor(existing)
-            setPadding(dp(8), dp(12), dp(8), dp(12))
-        }
-        val hexLabel = TextView(this).apply {
-            text = String.format("#%06X", 0xFFFFFF and existing)
-            textSize = 11f
-            setTextColor(Color.WHITE)
-            gravity = android.view.Gravity.CENTER
-            setPadding(0, dp(5), 0, 0)
-        }
-        val wheel = ColorWheelView(this, existing) { color ->
-            chosenColor = color
-            sample.setTextColor(color)
-            hexLabel.text = String.format("#%06X", 0xFFFFFF and color)
-        }
-        panel.addView(wheel, LinearLayout.LayoutParams(dp(220), dp(220)))
         val previewColumn = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             gravity = android.view.Gravity.CENTER
-            setPadding(dp(8), 0, 0, 0)
+            setPadding(dp(8), 0, dp(4), 0)
+        }
+        val temperatureSample = TextView(this).apply {
+            text = "22°"
+            textSize = 38f
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = android.view.Gravity.CENTER
+            setTextColor(existing)
+        }
+        val conditionSample = TextView(this).apply {
+            text = "☀️  Cer senin"
+            textSize = 15f
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = android.view.Gravity.CENTER
+            setTextColor(existing)
+            setPadding(0, dp(2), 0, dp(5))
+        }
+        val summarySample = TextView(this).apply {
+            text = "Ploiești · 14:00\nSe simte 21°\nVânt 8 km/h · Ploaie 0%"
+            textSize = 11f
+            gravity = android.view.Gravity.CENTER
+            setTextColor(existing)
+            setLineSpacing(dp(2).toFloat(), 1f)
         }
         val eye = TextView(this).apply {
-            text = "👁"
-            textSize = 30f
+            text = "◉"
+            textSize = 26f
             gravity = android.view.Gravity.CENTER
+            setTextColor(existing)
         }
-        previewColumn.addView(eye)
-        previewColumn.addView(sample)
-        previewColumn.addView(TextView(this).apply {
-            text = "Previzualizare"
-            textSize = 11f
+        val previewCaption = TextView(this).apply {
+            text = "PREVIZUALIZARE"
+            textSize = 10f
+            typeface = Typeface.DEFAULT_BOLD
             setTextColor(Color.LTGRAY)
             gravity = android.view.Gravity.CENTER
-        })
+            setPadding(0, dp(5), 0, dp(4))
+        }
+        val hexLabel = TextView(this).apply {
+            text = String.format("#%06X", 0xFFFFFF and existing)
+            textSize = 12f
+            setTextColor(Color.WHITE)
+            gravity = android.view.Gravity.CENTER
+            setPadding(0, dp(6), 0, 0)
+        }
+
+        fun refreshSample(color: Int) {
+            temperatureSample.setTextColor(color)
+            conditionSample.setTextColor(color)
+            summarySample.setTextColor(color)
+            eye.setTextColor(color)
+            hexLabel.text = String.format("#%06X", 0xFFFFFF and color)
+        }
+
+        val wheel = ColorWheelView(this, existing) { color ->
+            chosenColor = color
+            refreshSample(color)
+        }
+        selectionRow.addView(wheel, LinearLayout.LayoutParams(dp(205), dp(205)))
+        previewColumn.addView(eye)
+        previewColumn.addView(temperatureSample)
+        previewColumn.addView(conditionSample)
+        previewColumn.addView(summarySample)
+        previewColumn.addView(previewCaption)
         previewColumn.addView(hexLabel)
-        panel.addView(previewColumn, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        selectionRow.addView(previewColumn, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        panel.addView(selectionRow)
+
+        val intensityLabel = TextView(this).apply {
+            text = "Luminozitate / intensitate: ${(brightness * 100).toInt()}%"
+            textSize = 13f
+            setTextColor(Color.WHITE)
+            setPadding(dp(2), dp(10), 0, 0)
+        }
+        val intensitySeek = SeekBar(this).apply {
+            max = 100
+            progress = (brightness * 100).toInt()
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                    brightness = progress / 100f
+                    intensityLabel.text = "Luminozitate / intensitate: ${progress}%"
+                    wheel.setBrightness(brightness)
+                    chosenColor = wheel.currentColor()
+                    refreshSample(chosenColor)
+                }
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            })
+        }
+        panel.addView(intensityLabel)
+        panel.addView(intensitySeek)
+
         AlertDialog.Builder(this)
-            .setTitle("Alege culoarea")
-            .setMessage("Glisează cu degetul pe cerc pentru a selecta nuanța.")
+            .setTitle("Alege culoarea textului")
+            .setMessage("Atinge și glisează pe cerc. Spre margine culoarea este mai saturată; spre centru devine mai pală.")
             .setView(panel)
             .setNegativeButton("Anulează", null)
             .setPositiveButton("Aplică") { _, _ ->
@@ -374,6 +435,7 @@ class SettingsActivity : Activity() {
         private var radius = 0f
         private var hue = 0f
         private var saturation = 0f
+        private var brightness = 1f
         private var selectedColor = initialColor
 
         init {
@@ -381,11 +443,25 @@ class SettingsActivity : Activity() {
             Color.colorToHSV(initialColor, hsv)
             hue = hsv[0]
             saturation = hsv[1]
+            brightness = hsv[2]
             isClickable = true
         }
 
+        fun setBrightness(value: Float) {
+            brightness = value.coerceIn(0f, 1f)
+            updateSelectedColor()
+        }
+
+        fun currentColor(): Int = selectedColor
+
+        private fun updateSelectedColor() {
+            selectedColor = Color.HSVToColor(floatArrayOf(hue, saturation, brightness))
+            onColorChanged(selectedColor)
+            invalidate()
+        }
+
         override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-            val desired = dp(220)
+            val desired = dp(205)
             setMeasuredDimension(
                 resolveSize(desired, widthMeasureSpec),
                 resolveSize(desired, heightMeasureSpec)
@@ -431,8 +507,11 @@ class SettingsActivity : Activity() {
             val markerRadius = radius * saturation
             val x = centerX + (kotlin.math.cos(angle) * markerRadius).toFloat()
             val y = centerY + (kotlin.math.sin(angle) * markerRadius).toFloat()
+            paint.style = Paint.Style.FILL
+            paint.color = selectedColor
+            canvas.drawCircle(x, y, dp(9).toFloat(), paint)
             paint.style = Paint.Style.STROKE
-            paint.strokeWidth = dp(3).toFloat()
+            paint.strokeWidth = dp(4).toFloat()
             paint.color = Color.BLACK
             canvas.drawCircle(x, y, dp(10).toFloat(), paint)
             paint.strokeWidth = dp(2).toFloat()
@@ -450,9 +529,7 @@ class SettingsActivity : Activity() {
                     if (distance <= radius + dp(12)) {
                         hue = (Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat() + 360f) % 360f
                         saturation = (distance / radius).coerceIn(0f, 1f)
-                        selectedColor = Color.HSVToColor(floatArrayOf(hue, saturation, 1f))
-                        onColorChanged(selectedColor)
-                        invalidate()
+                        updateSelectedColor()
                     }
                     return true
                 }
