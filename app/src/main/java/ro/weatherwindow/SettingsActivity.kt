@@ -179,12 +179,12 @@ class SettingsActivity : Activity() {
             "size_daily" to 12
         )
         sizes.forEach { (key, defaultValue) ->
-            previewViews[key]?.textSize = prefs.getInt(key, defaultValue).toFloat()
+            previewViews[key]?.textSize = prefs.getInt(key, defaultValue) * 1.15f
         }
-        previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = prefs.getInt("shared_size_hourly", prefs.getInt("size_hourly_5x4", 12)).coerceIn(8, 16).toFloat() }
-        previewViews.filterKeys { it.startsWith("size_daily") }.values.forEach { it.textSize = prefs.getInt("shared_size_daily", prefs.getInt("size_daily_5x4", 12)).coerceIn(8, 16).toFloat() }
-        previewViews["label_hourly"]?.textSize = (prefs.getInt("shared_size_hourly", prefs.getInt("size_hourly_5x4", 12)).coerceIn(8, 16) + 1).toFloat()
-        previewViews["label_daily"]?.textSize = (prefs.getInt("shared_size_daily", prefs.getInt("size_daily_5x4", 12)).coerceIn(8, 16) + 1).toFloat()
+        previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = prefs.getInt("shared_size_hourly", prefs.getInt("size_hourly_5x4", 12)).coerceIn(8, 16) * 1.15f }
+        previewViews.filterKeys { it.startsWith("size_daily") }.values.forEach { it.textSize = prefs.getInt("shared_size_daily", prefs.getInt("size_daily_5x4", 12)).coerceIn(8, 16) * 1.15f }
+        previewViews["label_hourly"]?.textSize = (prefs.getInt("shared_size_hourly", prefs.getInt("size_hourly_5x4", 12)).coerceIn(8, 16) + 1) * 1.15f
+        previewViews["label_daily"]?.textSize = (prefs.getInt("shared_size_daily", prefs.getInt("size_daily_5x4", 12)).coerceIn(8, 16) + 1) * 1.15f
     }
 
     private fun addBackgroundOpacityControl(parent: LinearLayout) {
@@ -241,10 +241,10 @@ class SettingsActivity : Activity() {
                     valueLabel.text = "$label: ${value}sp"
                     if (fromUser) {
                         prefs.edit().putInt(storedKey, value).apply()
-                        previewViews[preferenceKey]?.textSize = value.toFloat()
+                        previewViews[preferenceKey]?.textSize = value * 1.15f
                         if (preferenceKey == "size_hourly") {
-                            previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = value.toFloat() }
-                            previewViews["label_hourly"]?.textSize = (value + 1).toFloat()
+                            previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = value * 1.15f }
+                            previewViews["label_hourly"]?.textSize = (value + 1) * 1.15f
                         }
                         if (preferenceKey == "size_daily") {
                             previewViews.filterKeys { it.startsWith("size_daily") }.values.forEach { it.textSize = value.toFloat() }
