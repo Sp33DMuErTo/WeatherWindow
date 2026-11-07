@@ -29,6 +29,7 @@ class SettingsActivity : Activity() {
     private var previewBackground: View? = null
     private var previewOverlay: View? = null
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+    private val previewTextScale = 0.72f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -115,11 +116,22 @@ class SettingsActivity : Activity() {
         previewViews["label_hourly"] = preview.findViewById(R.id.hourly_label)
         listOf(R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6).forEachIndexed { index, id -> previewViews["size_daily_$index"] = preview.findViewById(id) }
         previewViews["label_daily"] = preview.findViewById(R.id.daily_label)
+        // Dedicated square 4x4 preview, independent from the live launcher widget size.
+        val previewSize = minOf(dp(320), (resources.displayMetrics.widthPixels - dp(36)).coerceAtLeast(dp(240)))
         previewScroll.addView(preview, FrameLayout.LayoutParams(
-            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT
+            previewSize, previewSize, android.view.Gravity.CENTER
         ))
+        val previewContent = preview.findViewById<LinearLayout>(R.id.widget_content)
+        previewContent.setPadding(dp(8), dp(8), dp(8), dp(8))
+        val previewHeader = previewContent.getChildAt(0)
+        previewHeader.layoutParams = previewHeader.layoutParams.apply { height = dp(70) }
+        val previewAnimation = preview.findViewById<View>(R.id.weather_animation)
+        previewAnimation.layoutParams = previewAnimation.layoutParams.apply {
+            width = dp(92)
+            height = dp(46)
+        }
         root.addView(previewScroll, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, dp(300)
+            LinearLayout.LayoutParams.MATCH_PARENT, previewSize
         ))
 
         root.addView(TextView(this).apply {
@@ -197,12 +209,12 @@ class SettingsActivity : Activity() {
             "size_daily" to 12
         )
         sizes.forEach { (key, defaultValue) ->
-            previewViews[key]?.textSize = prefs.getInt(key, defaultValue) * 1.15f
+            previewViews[key]?.textSize = prefs.getInt(key, defaultValue) * previewTextScale
         }
-        previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = prefs.getInt("shared_size_hourly", prefs.getInt("size_hourly_5x4", 12)).coerceIn(8, 16) * 1.15f }
-        previewViews.filterKeys { it.startsWith("size_daily") }.values.forEach { it.textSize = prefs.getInt("shared_size_daily", prefs.getInt("size_daily_5x4", 12)).coerceIn(8, 16) * 1.15f }
-        previewViews["label_hourly"]?.textSize = (prefs.getInt("shared_size_hourly", prefs.getInt("size_hourly_5x4", 12)).coerceIn(8, 16) + 1) * 1.15f
-        previewViews["label_daily"]?.textSize = (prefs.getInt("shared_size_daily", prefs.getInt("size_daily_5x4", 12)).coerceIn(8, 16) + 1) * 1.15f
+        previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = prefs.getInt("shared_size_hourly", prefs.getInt("size_hourly_5x4", 12)).coerceIn(8, 16) * previewTextScale }
+        previewViews.filterKeys { it.startsWith("size_daily") }.values.forEach { it.textSize = prefs.getInt("shared_size_daily", prefs.getInt("size_daily_5x4", 12)).coerceIn(8, 16) * previewTextScale }
+        previewViews["label_hourly"]?.textSize = (prefs.getInt("shared_size_hourly", prefs.getInt("size_hourly_5x4", 12)).coerceIn(8, 16) + 1) * previewTextScale
+        previewViews["label_daily"]?.textSize = (prefs.getInt("shared_size_daily", prefs.getInt("size_daily_5x4", 12)).coerceIn(8, 16) + 1) * previewTextScale
     }
 
 
@@ -601,14 +613,14 @@ class SettingsActivity : Activity() {
                     valueLabel.text = "$label: ${value}sp"
                     if (fromUser) {
                         prefs.edit().putInt(storedKey, value).apply()
-                        previewViews[preferenceKey]?.textSize = value * 1.15f
+                        previewViews[preferenceKey]?.textSize = value * previewTextScale
                         if (preferenceKey == "size_hourly") {
-                            previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = value * 1.15f }
-                            previewViews["label_hourly"]?.textSize = (value + 1) * 1.15f
+                            previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = value * previewTextScale }
+                            previewViews["label_hourly"]?.textSize = (value + 1) * previewTextScale
                         }
                         if (preferenceKey == "size_daily") {
-                            previewViews.filterKeys { it.startsWith("size_daily") }.values.forEach { it.textSize = value.toFloat() }
-                            previewViews["label_daily"]?.textSize = (value + 1).toFloat()
+                            previewViews.filterKeys { it.startsWith("size_daily") }.values.forEach { it.textSize = value * previewTextScale }
+                            previewViews["label_daily"]?.textSize = (value + 1) * previewTextScale
                         }
                         WeatherWidgetProvider.updateTextSizes(this@SettingsActivity)
                     }
