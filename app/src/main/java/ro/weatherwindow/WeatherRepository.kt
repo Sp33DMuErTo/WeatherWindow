@@ -119,7 +119,7 @@ object WeatherRepository {
             "${times.optString(i).takeLast(5)}\n${temps.optDouble(i).toInt()}°\n${symbol(hourlyCodes.optInt(i))}\n💧 ${rain.optInt(i)}%"
         }
         val dayParts = (1 until minOf(7, daily.getJSONArray("time").length())).map { i ->
-            "${dayLabel(daily.getJSONArray("time").optString(i), i)}\n${daily.getJSONArray("temperature_2m_max").optDouble(i).toInt()}°/${daily.getJSONArray("temperature_2m_min").optDouble(i).toInt()}°\n${symbol(daily.getJSONArray("weather_code").optInt(i))}\n${daily.getJSONArray("precipitation_probability_max").optInt(i)}%"
+            "${dayLabel(daily.getJSONArray("time").optString(i), i)}\n${daily.getJSONArray("temperature_2m_max").optDouble(i).toInt()}°/${daily.getJSONArray("temperature_2m_min").optDouble(i).toInt()}°\n${symbol(daily.getJSONArray("weather_code").optInt(i))}\n💧 ${daily.getJSONArray("precipitation_probability_max").optInt(i)}%"
         }
         val city = cityOverride ?: context.getSharedPreferences("weather", Context.MODE_PRIVATE).getString("city", "Locație salvată") ?: "Locație salvată"
         return WeatherSnapshot(
