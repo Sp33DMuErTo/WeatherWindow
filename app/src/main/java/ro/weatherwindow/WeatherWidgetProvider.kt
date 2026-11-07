@@ -55,8 +55,10 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.temperature, "${weather.temperature}°")
                 views.setTextViewText(R.id.condition, "${WeatherRepository.symbol(weather.code)}  ${WeatherRepository.condition(weather.code)}")
                 views.setTextViewText(R.id.details, "Se simte ${weather.feelsLike}°  •  Umiditate ${weather.humidity}%  •  Vânt ${weather.wind} km/h")
-                views.setTextViewText(R.id.hourly_left, weather.hourlyLeft)
-                views.setTextViewText(R.id.hourly_right, weather.hourlyRight)
+                val hourlyIds = intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6)
+                hourlyIds.forEachIndexed { index, id ->
+                    views.setTextViewText(id, weather.hourlyColumns.getOrElse(index) { "--:--\\n—\\n--°\\n--%" })
+                }
                 views.setTextViewText(R.id.daily, weather.daily)
                 applyTextSizes(context, views)
                 weatherBackground(context, weather.code)?.let {
@@ -75,8 +77,9 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             views.setTextViewTextSize(R.id.condition, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_condition", 18).toFloat())
             views.setTextViewTextSize(R.id.details, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_details", 16).toFloat())
             val hourlySize = prefs.getInt("size_hourly", 14).toFloat()
-            views.setTextViewTextSize(R.id.hourly_left, TypedValue.COMPLEX_UNIT_SP, hourlySize)
-            views.setTextViewTextSize(R.id.hourly_right, TypedValue.COMPLEX_UNIT_SP, hourlySize)
+            intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6).forEach { id ->
+                views.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, hourlySize)
+            }
             views.setTextViewTextSize(R.id.hourly_label, TypedValue.COMPLEX_UNIT_SP, hourlySize + 1)
             views.setTextViewTextSize(R.id.daily, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_daily", 11).toFloat())
             views.setTextViewTextSize(R.id.daily_label, TypedValue.COMPLEX_UNIT_SP, (prefs.getInt("size_daily", 11) + 1).toFloat())
@@ -105,8 +108,9 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.temperature, "--°")
                 views.setTextViewText(R.id.condition, "Deschide aplicația și alege orașul sau GPS")
                 views.setTextViewText(R.id.details, "Prognoză meteo Open-Meteo")
-                views.setTextViewText(R.id.hourly_left, "Prognoza orară\nva apărea aici")
-                views.setTextViewText(R.id.hourly_right, "")
+                intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6).forEach { id ->
+                    views.setTextViewText(id, "--:--\\n—\\n--°\\n--%")
+                }
                 views.setTextViewText(R.id.daily, "Prognoza pe 7 zile va apărea aici")
                 applyTextSizes(context, views)
                 weatherBackground(context, 3)?.let { views.setImageViewBitmap(R.id.weather_background, it) }
