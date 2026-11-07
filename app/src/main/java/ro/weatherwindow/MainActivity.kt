@@ -21,6 +21,8 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.GradientDrawable
+import android.widget.HorizontalScrollView
 import android.text.Editable
 import android.text.TextWatcher
 import kotlin.concurrent.thread
@@ -31,6 +33,7 @@ class MainActivity : Activity() {
     private var citySuggestions: List<CitySuggestion> = emptyList()
     private var selectingSuggestion = false
     private lateinit var status: TextView
+    private lateinit var forecastContainer: LinearLayout
     private lateinit var locationManager: LocationManager
     private val prefs by lazy { getSharedPreferences("weather", Context.MODE_PRIVATE) }
 
@@ -131,6 +134,10 @@ class MainActivity : Activity() {
                 bottomMargin = 12
             })
         }
+        forecastContainer = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        root.addView(forecastContainer, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            bottomMargin = 18
+        })
 
         val settingsButton = Button(this).apply {
             text = "⚙️ Setări widget"
@@ -248,13 +255,100 @@ class MainActivity : Activity() {
             prefs.getString("city", "Locația mea") ?: "Locația mea")
     }
 
+    private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
+
+    private fun label(text: String, size: Float, color: Int, bold: Boolean = false): TextView =
+        TextView(this).apply {
+            this.text = text
+            textSize = size
+            setTextColor(color)
+            if (bold) typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+        }
+
+    private fun roundedBackground(color: Int, strokeColor: Int = Color.TRANSPARENT): GradientDrawable =
+        GradientDrawable().apply {
+            setColor(color)
+            cornerRadius = dp(18).toFloat()
+            if (strokeColor != Color.TRANSPARENT) setStroke(dp(1), strokeColor)
+        }
+
     private fun showWeather(w: WeatherSnapshot) {
-        status.text = "${w.city}\n${w.temperature}°  •  ${WeatherRepository.symbol(w.code)}  ${WeatherRepository.condition(w.code)}\nSe simte ca ${w.feelsLike}°  |  Umiditate ${w.humidity}%  |  Vânt ${w.wind} km/h\n\nUrmătoarele ore\n${w.hourlyFull}\n\nUrmătoarele 7 zile\n${w.daily}\n\nWidgetul de pe ecranul principal a fost actualizat."
+        status.text = "Prognoză actualizată • Date furnizate de Open-Meteo"
+        forecastContainer.removeAllViews()
+
+        val currentCard = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER
+            setPadding(dp(18), dp(18), dp(18), dp(18))
+            background = roundedBackground(Color.rgb(31, 57, 78), Color.rgb(66, 103, 128))
+        }
+        currentCard.addView(label(w.city, 17f, Color.rgb(203, 221, 235), true))
+        currentCard.addView(label("\${w.temperature}°", 48f, Color.WHITE, true))
+        currentCard.addView(label("\${WeatherRepository.symbol(w.code)}  \${WeatherRepository.condition(w.code)}", 19f, Color.WHITE, true))
+        currentCard.addView(label("Se simte ca \${w.feelsLike}°     •     Umiditate \${w.humidity}%     •     Vânt \${w.wind} km/h", 13f, Color.rgb(204, 218, 229)))
+        forecastContainer.addView(currentCard, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            bottomMargin = dp(22)
+        })
+
+        val hourlyTitle = TextView(this).apply {
+            text = "Următoarele 24 de ore"
+            textSize = 21f
+            setTextColor(Color.WHITE)
+            typeface = Typeface.DEFAULT_BOLD
+        }
+        forecastContainer.addView(hourlyTitle)
+        forecastContainer.addView(TextView(this).apply {
+            text = "Glisează pentru a vedea toate orele"
+            textSize = 12f
+            setTextColor(Color.rgb(160, 184, 202))
+            setPadding(0, dp(3), 0, dp(10))
+        })
+
+        val cards = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        w.hourlyForecast.forEachIndexed { index, hour ->
+            val card = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER
+                setPadding(dp(8), dp(12), dp(8), dp(12))
+                background = if (index == 0) roundedBackground(Color.rgb(48, 91, 119), Color.rgb(113, 185, 220))
+                    else roundedBackground(Color.rgb(27, 48, 66), Color.rgb(49, 72, 91))
+            }
+            card.addView(label(hour.time, 14f, if (index == 0) Color.WHITE else Color.rgb(190, 207, 220), true))
+            card.addView(label(WeatherRepository.symbol(hour.code), 30f, Color.WHITE).apply {
+                setPadding(0, dp(8), 0, dp(7))
+            })
+            card.addView(label("\${hour.temperature}°", 25f, Color.WHITE, true))
+            card.addView(label("💧 \${hour.precipitation}%", 13f, Color.rgb(133, 205, 242), true).apply {
+                setPadding(0, dp(8), 0, 0)
+            })
+            cards.addView(card, LinearLayout.LayoutParams(dp(104), dp(145)).apply {
+                marginEnd = dp(9)
+            })
+        }
+        val hourlyScroll = HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+            clipToPadding = false
+            addView(cards)
+        }
+        forecastContainer.addView(hourlyScroll, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(153)).apply {
+            bottomMargin = dp(22)
+        })
+
+        forecastContainer.addView(TextView(this).apply {
+            text = "Temperatura resimțită, umiditatea și vântul sunt măsurate pentru condițiile actuale."
+            textSize = 12f
+            setTextColor(Color.rgb(160, 184, 202))
+        })
         WeatherWidgetProvider.updateAll(this, w)
         try {
             WeatherAnimationService.start(this)
         } catch (_: Exception) {
-            status.text = status.text.toString() + "\nAnimația continuă nu a putut porni; widgetul rămâne funcțional."
+            status.text = "Prognoză actualizată • Animația nu a pornit; widgetul rămâne funcțional."
         }
     }
+}
 }
