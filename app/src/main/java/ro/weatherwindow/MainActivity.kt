@@ -69,7 +69,7 @@ class MainActivity : Activity() {
                     setText(chosen.label, false)
                     dismissDropDown()
                     selectingSuggestion = false
-                    loadCoordinates(chosen.latitude, chosen.longitude, chosen.name)
+                    loadCoordinates(chosen.latitude, chosen.longitude, chosen.name, false)
                 }
             }
             addTextChangedListener(object : TextWatcher {
@@ -159,6 +159,9 @@ class MainActivity : Activity() {
             insets
         }
         setContentView(page)
+        if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 42)
+        }
         if (prefs.contains("lat")) refreshSaved()
     }
 
@@ -174,7 +177,7 @@ class MainActivity : Activity() {
                 val cleanName = city.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
                 val snapshot = WeatherRepository.load(this, coords.first, coords.second, cleanName)
                 prefs.edit().putString("city", cleanName).putFloat("lat", coords.first.toFloat())
-                    .putFloat("lon", coords.second.toFloat()).apply()
+                    .putFloat("lon", coords.second.toFloat()).putBoolean("is_gps", false).apply()
                 runOnUiThread { showWeather(snapshot) }
             } catch (e: Exception) {
                 runOnUiThread { status.text = "Nu am putut încărca vremea: ${e.message ?: "verifică internetul"}" }
@@ -197,13 +200,13 @@ class MainActivity : Activity() {
                 if (candidate != null && (best == null || candidate.accuracy < best.accuracy)) best = candidate
             }
             if (best != null) {
-                loadCoordinates(best.latitude, best.longitude, "Locația mea")
+                loadCoordinates(best.latitude, best.longitude, "Locația mea", true)
             } else {
                 val provider = if (locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) LocationManager.NETWORK_PROVIDER else LocationManager.GPS_PROVIDER
                 locationManager.requestLocationUpdates(provider, 1000L, 0f, object : LocationListener {
                     override fun onLocationChanged(location: Location) {
                         locationManager.removeUpdates(this)
-                        loadCoordinates(location.latitude, location.longitude, "Locația mea")
+                        loadCoordinates(location.latitude, location.longitude, "Locația mea", true)
                     }
                 }, Looper.getMainLooper())
                 status.text = "Aștept poziția GPS. Activează serviciile de localizare și încearcă din nou dacă durează."
@@ -221,14 +224,14 @@ class MainActivity : Activity() {
         else if (requestCode == 41) status.text = "Ai refuzat accesul la locație. Poți alege manual orașul."
     }
 
-    private fun loadCoordinates(lat: Double, lon: Double, label: String) {
+    private fun loadCoordinates(lat: Double, lon: Double, label: String, isGps: Boolean = prefs.getBoolean("is_gps", false)) {
         status.text = "Încarc prognoza pentru poziția ta…"
         thread {
             try {
                 val cityName = WeatherRepository.reverseGeocode(this, lat, lon) ?: label
                 val snapshot = WeatherRepository.load(this, lat, lon, cityName)
                 prefs.edit().putString("city", cityName).putFloat("lat", lat.toFloat())
-                    .putFloat("lon", lon.toFloat()).apply()
+                    .putFloat("lon", lon.toFloat()).putBoolean("is_gps", isGps).apply()
                 runOnUiThread { showWeather(snapshot) }
             } catch (e: Exception) {
                 runOnUiThread { status.text = "Eroare la preluarea vremii: ${e.message ?: "conexiune indisponibilă"}" }
@@ -248,5 +251,10 @@ class MainActivity : Activity() {
     private fun showWeather(w: WeatherSnapshot) {
         status.text = "${w.city}\n${w.temperature}°  •  ${WeatherRepository.symbol(w.code)}  ${WeatherRepository.condition(w.code)}\nSe simte ca ${w.feelsLike}°  |  Umiditate ${w.humidity}%  |  Vânt ${w.wind} km/h\n\nUrmătoarele ore\n${w.hourlyFull}\n\nUrmătoarele 7 zile\n${w.daily}\n\nWidgetul de pe ecranul principal a fost actualizat."
         WeatherWidgetProvider.updateAll(this, w)
+        try {
+            WeatherAnimationService.start(this)
+        } catch (_: Exception) {
+            status.text = status.text.toString() + "\nAnimația continuă nu a putut porni; widgetul rămâne funcțional."
+        }
     }
 }
