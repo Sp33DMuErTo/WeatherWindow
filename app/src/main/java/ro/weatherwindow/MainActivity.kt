@@ -12,15 +12,21 @@ import android.os.Bundle
 import android.os.Looper
 import android.view.Gravity
 import android.widget.Button
-import android.widget.EditText
+import android.widget.ArrayAdapter
+import android.widget.AutoCompleteTextView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.graphics.Color
 import android.graphics.Typeface
+import android.text.Editable
+import android.text.TextWatcher
 import kotlin.concurrent.thread
 
 class MainActivity : Activity() {
-    private lateinit var cityInput: EditText
+    private lateinit var cityInput: AutoCompleteTextView
+    private lateinit var cityAdapter: ArrayAdapter<String>
+    private var citySuggestions: List<CitySuggestion> = emptyList()
+    private var selectingSuggestion = false
     private lateinit var status: TextView
     private lateinit var locationManager: LocationManager
     private val prefs by lazy { getSharedPreferences("weather", Context.MODE_PRIVATE) }
@@ -45,15 +51,64 @@ class MainActivity : Activity() {
             textSize = 15f
             setTextColor(Color.LTGRAY)
         }
-        cityInput = EditText(this).apply {
-            hint = "Scrie orașul (ex. Ploiești)"
+        cityAdapter = ArrayAdapter(this, android.R.layout.simple_dropdown_item_1line, mutableListOf<String>())
+        cityInput = AutoCompleteTextView(this).apply {
+            hint = "Scrie primele litere ale orașului"
+            threshold = 2
             setSingleLine(true)
             setTextColor(Color.WHITE)
             setHintTextColor(Color.LTGRAY)
+            setAdapter(cityAdapter)
+            setOnItemClickListener { _, _, position, _ ->
+                val chosen = citySuggestions.getOrNull(position)
+                if (chosen != null) {
+                    selectingSuggestion = true
+                    setText(chosen.label, false)
+                    dismissDropDown()
+                    selectingSuggestion = false
+                    loadCoordinates(chosen.latitude, chosen.longitude, chosen.name)
+                }
+            }
+            addTextChangedListener(object : TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+                override fun afterTextChanged(s: Editable?) {
+                    if (selectingSuggestion) return
+                    val query = s?.toString()?.trim().orEmpty()
+                    if (query.length < 2) {
+                        citySuggestions = emptyList()
+                        cityAdapter.clear()
+                        return
+                    }
+                    thread {
+                        try {
+                            val results = WeatherRepository.searchCities(query)
+                            runOnUiThread {
+                                if (cityInput.text.toString().trim().equals(query, ignoreCase = true)) {
+                                    citySuggestions = results
+                                    cityAdapter.clear()
+                                    cityAdapter.addAll(results.map { it.label })
+                                    cityAdapter.notifyDataSetChanged()
+                                    if (results.isNotEmpty() && cityInput.hasFocus()) cityInput.showDropDown()
+                                }
+                            }
+                        } catch (_: Exception) {
+                            // Sugestiile pot lipsi temporar dacă nu există conexiune.
+                        }
+                    }
+                }
+            })
         }
         val cityButton = Button(this).apply {
-            text = "Alege orașul"
-            setOnClickListener { loadCity(cityInput.text.toString().trim()) }
+            text = "Caută / selectează orașul"
+            setOnClickListener {
+                if (cityInput.text.toString().trim().length < 2) {
+                    status.text = "Scrie cel puțin două litere pentru a căuta un oraș."
+                } else {
+                    cityInput.showDropDown()
+                    status.text = "Alege localitatea dorită din lista de sugestii."
+                }
+            }
         }
         val gpsButton = Button(this).apply {
             text = "Folosește locația GPS"
