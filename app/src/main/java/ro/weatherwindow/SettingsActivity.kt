@@ -20,6 +20,8 @@ class SettingsActivity : Activity() {
     private val previewViews = mutableMapOf<String, TextView>()
     private var previewBackground: View? = null
     private var previewOverlay: View? = null
+    private var activeProfile: String = "5x3"
+    private fun profileKey(key: String) = "${key}_${activeProfile}"
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -30,6 +32,28 @@ class SettingsActivity : Activity() {
             prefs.edit().putInt("background_opacity", snappedOpacity).apply()
             WeatherWidgetProvider.updateBackgroundOpacity(this)
         }
+        // The existing slider values were tuned while the widget was 5x3.
+        // Preserve those values as the new 5x3 profile; 5x4 keeps the original defaults.
+        val defaults = mapOf(
+            "size_location" to 22,
+            "size_temperature" to 53,
+            "size_condition" to 18,
+            "size_details" to 16,
+            "size_hourly" to 12,
+            "size_daily" to 12
+        )
+        val migration = prefs.edit()
+        defaults.forEach { (key, defaultValue) ->
+            if (!prefs.contains("${key}_5x3")) {
+                migration.putInt("${key}_5x3", prefs.getInt(key, defaultValue))
+            }
+            if (!prefs.contains("${key}_5x4")) {
+                migration.putInt("${key}_5x4", defaultValue)
+            }
+        }
+        migration.apply()
+        activeProfile = prefs.getString("active_text_profile", "5x3") ?: "5x3"
+        if (activeProfile != "5x3" && activeProfile != "5x4") activeProfile = "5x3"
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(18), dp(12), dp(18), dp(12))
@@ -124,6 +148,7 @@ class SettingsActivity : Activity() {
             typeface = Typeface.DEFAULT_BOLD
             setPadding(0, dp(10), 0, dp(3))
         })
+        addTextProfileSelector(controls)
         addTextSizeControl(controls, "Locație", "size_location", 10, 30, 22)
         addTextSizeControl(controls, "Temperatură", "size_temperature", 24, 64, 53)
         addTextSizeControl(controls, "Condiții meteo", "size_condition", 9, 24, 18)
@@ -141,12 +166,13 @@ class SettingsActivity : Activity() {
             text = "Resetează toate setările"
             setOnClickListener {
                 prefs.edit()
-                    .putInt("size_location", 22)
-                    .putInt("size_temperature", 53)
-                    .putInt("size_condition", 18)
-                    .putInt("size_details", 16)
-                    .putInt("size_hourly", 12)
-                    .putInt("size_daily", 12)
+                    .putInt("size_location_5x3", 22).putInt("size_temperature_5x3", 53)
+                    .putInt("size_condition_5x3", 18).putInt("size_details_5x3", 16)
+                    .putInt("size_hourly_5x3", 12).putInt("size_daily_5x3", 12)
+                    .putInt("size_location_5x4", 22).putInt("size_temperature_5x4", 53)
+                    .putInt("size_condition_5x4", 18).putInt("size_details_5x4", 16)
+                    .putInt("size_hourly_5x4", 12).putInt("size_daily_5x4", 12)
+                    .putString("active_text_profile", "5x3")
                     .putInt("background_opacity", 100)
                     .apply()
                 WeatherWidgetProvider.updateTextSizes(this@SettingsActivity)
@@ -172,6 +198,37 @@ class SettingsActivity : Activity() {
         applyPreviewSizes()
     }
 
+    private fun addTextProfileSelector(parent: LinearLayout) {
+        parent.addView(TextView(this).apply {
+            text = "Profilul pe care îl reglezi:"
+            textSize = 14f
+            setTextColor(Color.WHITE)
+            setPadding(0, dp(4), 0, dp(2))
+        })
+        val row = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            val compact = Button(this@SettingsActivity).apply {
+                text = if (activeProfile == "5x3") "✓  5×3" else "5×3"
+                setOnClickListener {
+                    activeProfile = "5x3"
+                    prefs.edit().putString("active_text_profile", activeProfile).apply()
+                    recreate()
+                }
+            }
+            val tall = Button(this@SettingsActivity).apply {
+                text = if (activeProfile == "5x4") "✓  5×4" else "5×4"
+                setOnClickListener {
+                    activeProfile = "5x4"
+                    prefs.edit().putString("active_text_profile", activeProfile).apply()
+                    recreate()
+                }
+            }
+            addView(compact, LinearLayout.LayoutParams(0, dp(44), 1f).apply { rightMargin = dp(5) })
+            addView(tall, LinearLayout.LayoutParams(0, dp(44), 1f).apply { leftMargin = dp(5) })
+        }
+        parent.addView(row)
+    }
+
     private fun applyPreviewSizes() {
         val sizes = mapOf(
             "size_location" to 22,
@@ -182,10 +239,10 @@ class SettingsActivity : Activity() {
             "size_daily" to 12
         )
         sizes.forEach { (key, defaultValue) ->
-            previewViews[key]?.textSize = prefs.getInt(key, defaultValue).toFloat()
+            previewViews[key]?.textSize = prefs.getInt(profileKey(key), defaultValue).toFloat()
         }
-        previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = prefs.getInt("size_hourly", 12).coerceIn(8, 16).toFloat() }
-        previewViews.filterKeys { it.startsWith("size_daily") }.values.forEach { it.textSize = prefs.getInt("size_daily", 12).coerceIn(8, 16).toFloat() }
+        previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = prefs.getInt(profileKey("size_hourly"), 12).coerceIn(8, 16).toFloat() }
+        previewViews.filterKeys { it.startsWith("size_daily") }.values.forEach { it.textSize = prefs.getInt(profileKey("size_daily"), 12).coerceIn(8, 16).toFloat() }
         previewViews["label_hourly"]?.textSize = (prefs.getInt("size_hourly", 12).coerceIn(8, 16) + 1).toFloat()
         previewViews["label_daily"]?.textSize = (prefs.getInt("size_daily", 12).coerceIn(8, 16) + 1).toFloat()
     }
@@ -227,7 +284,8 @@ class SettingsActivity : Activity() {
         parent: LinearLayout, label: String, preferenceKey: String,
         min: Int, max: Int, defaultValue: Int
     ) {
-        val current = prefs.getInt(preferenceKey, defaultValue).coerceIn(min, max)
+        val storedKey = profileKey(preferenceKey)
+        val current = prefs.getInt(storedKey, defaultValue).coerceIn(min, max)
         val valueLabel = TextView(this).apply {
             text = "$label: ${current}sp"
             textSize = 14f
@@ -242,7 +300,7 @@ class SettingsActivity : Activity() {
                     val value = min + progress
                     valueLabel.text = "$label: ${value}sp"
                     if (fromUser) {
-                        prefs.edit().putInt(preferenceKey, value).apply()
+                        prefs.edit().putInt(storedKey, value).apply()
                         previewViews[preferenceKey]?.textSize = value.toFloat()
                         if (preferenceKey == "size_hourly") {
                             previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = value.toFloat() }
