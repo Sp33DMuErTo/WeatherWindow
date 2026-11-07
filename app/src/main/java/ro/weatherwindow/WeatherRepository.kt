@@ -19,6 +19,7 @@ data class WeatherSnapshot(
     val code: Int,
     val hourlyLeft: String,
     val hourlyRight: String,
+    val hourlyColumns: List<String>,
     val hourlyFull: String,
     val daily: String
 )
@@ -105,6 +106,9 @@ object WeatherRepository {
         val hourParts = (start until minOf(start + 24, times.length())).map { i ->
             "${times.optString(i).takeLast(5)} ${symbol(hourlyCodes.optInt(i))} ${temps.optDouble(i).toInt()}°/${rain.optInt(i)}%"
         }
+        val hourlyColumns = (start until minOf(start + 6, times.length())).map { i ->
+            "${times.optString(i).takeLast(5)}\\n${symbol(hourlyCodes.optInt(i))}\\n${temps.optDouble(i).toInt()}°\\n${rain.optInt(i)}%"
+        }
         val dayParts = (0 until minOf(7, daily.getJSONArray("time").length())).map { i ->
             "${dayLabel(daily.getJSONArray("time").optString(i), i)} ${symbol(daily.getJSONArray("weather_code").optInt(i))} ${daily.getJSONArray("temperature_2m_max").optDouble(i).toInt()}°/${daily.getJSONArray("temperature_2m_min").optDouble(i).toInt()}°"
         }
@@ -118,6 +122,7 @@ object WeatherRepository {
             current.getInt("weather_code"),
             hourParts.take(3).joinToString("\n"),
             hourParts.drop(3).take(3).joinToString("\n"),
+            hourlyColumns,
             hourParts.joinToString("\n"),
             dayParts.chunked(2).joinToString("\n") { row -> row.joinToString("  ·  ") }
         )
