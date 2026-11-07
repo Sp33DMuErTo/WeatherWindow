@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.BitmapFactory
 import android.util.Base64
 import android.util.TypedValue
@@ -52,6 +53,17 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 manager.partiallyUpdateAppWidget(id, views)
             }
         }
+        fun updateTextColor(context: Context) {
+            val manager = AppWidgetManager.getInstance(context)
+            val ids = manager.getAppWidgetIds(ComponentName(context, WeatherWidgetProvider::class.java))
+            ids.forEach { id ->
+                val options = manager.getAppWidgetOptions(id)
+                val views = RemoteViews(context.packageName, widgetLayout(options))
+                applyTextColor(context, views)
+                manager.partiallyUpdateAppWidget(id, views)
+            }
+        }
+
         fun updateBackgroundOpacity(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, WeatherWidgetProvider::class.java))
@@ -98,6 +110,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     views.setTextViewText(id, weather.dailyColumns.getOrElse(index) { "--\n--°/--°\n—\n--%" })
                 }
                 applyTextSizes(context, views, options)
+                applyTextColor(context, views)
                 weatherBackground(context, weather.code)?.let {
                     views.setImageViewBitmap(R.id.weather_background, it)
                 }
@@ -105,6 +118,35 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                 views.setOnClickPendingIntent(R.id.widget_root, open)
                 manager.updateAppWidget(id, views)
+            }
+        }
+
+        private fun applyTextColor(context: Context, views: RemoteViews) {
+            val prefs = context.getSharedPreferences("weather", Context.MODE_PRIVATE)
+            val enabled = prefs.getBoolean("text_color_enabled", false)
+            val selected = prefs.getInt("text_color", Color.WHITE)
+            val defaults = mapOf(
+                R.id.location to Color.rgb(247, 250, 252),
+                R.id.temperature to Color.WHITE,
+                R.id.condition to Color.rgb(220, 234, 244),
+                R.id.details to Color.rgb(194, 212, 226),
+                R.id.hourly_label to Color.rgb(175, 200, 218),
+                R.id.daily_label to Color.rgb(175, 200, 218),
+                R.id.hourly_1 to Color.rgb(240, 245, 248),
+                R.id.hourly_2 to Color.rgb(240, 245, 248),
+                R.id.hourly_3 to Color.rgb(240, 245, 248),
+                R.id.hourly_4 to Color.rgb(240, 245, 248),
+                R.id.hourly_5 to Color.rgb(240, 245, 248),
+                R.id.hourly_6 to Color.rgb(240, 245, 248),
+                R.id.daily_1 to Color.rgb(240, 245, 248),
+                R.id.daily_2 to Color.rgb(240, 245, 248),
+                R.id.daily_3 to Color.rgb(240, 245, 248),
+                R.id.daily_4 to Color.rgb(240, 245, 248),
+                R.id.daily_5 to Color.rgb(240, 245, 248),
+                R.id.daily_6 to Color.rgb(240, 245, 248)
+            )
+            defaults.forEach { (id, defaultColor) ->
+                views.setTextColor(id, if (enabled) selected else defaultColor)
             }
         }
 
@@ -173,6 +215,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     views.setTextViewText(id, "--\n--°/--°\n—\n--%")
                 }
                 applyTextSizes(context, views, options)
+                applyTextColor(context, views)
                 weatherBackground(context, 3)?.let { views.setImageViewBitmap(R.id.weather_background, it) }
                 applyBackgroundOpacity(context, views)
                 val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
