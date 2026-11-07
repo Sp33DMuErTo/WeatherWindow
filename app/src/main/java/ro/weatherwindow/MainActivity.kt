@@ -228,7 +228,7 @@ class MainActivity : Activity() {
         status.text = "Încarc prognoza pentru poziția ta…"
         thread {
             try {
-                val cityName = WeatherRepository.reverseGeocode(this, lat, lon) ?: label
+                val cityName = if (isGps) WeatherRepository.reverseGeocode(this, lat, lon) ?: label else label
                 val snapshot = WeatherRepository.load(this, lat, lon, cityName)
                 prefs.edit().putString("city", cityName).putFloat("lat", lat.toFloat())
                     .putFloat("lon", lon.toFloat()).putBoolean("is_gps", isGps).apply()
