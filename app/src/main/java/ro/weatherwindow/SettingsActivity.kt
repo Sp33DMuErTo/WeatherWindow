@@ -62,10 +62,12 @@ class SettingsActivity : Activity() {
         preview.findViewById<TextView>(R.id.condition).text = "🌤️  Parțial noros"
         preview.findViewById<TextView>(R.id.details).text = "Se simte 17°  •  Umiditate 62%  •  Vânt 12 km/h"
         preview.findViewById<TextView>(R.id.hourly_label).text = "PROGNOZĂ ORARĂ · 6 H"
-        preview.findViewById<TextView>(R.id.hourly_left).text =
-            "12:00 🌤️ 18°/0%\n13:00 ☀️ 19°/0%\n14:00 ☀️ 20°/0%"
-        preview.findViewById<TextView>(R.id.hourly_right).text =
-            "15:00 🌤️ 20°/5%\n16:00 🌤️ 19°/5%\n17:00 ☁️ 18°/10%"
+        val previewHourly = listOf(
+            "12:00\\n🌤️\\n18°\\n0%", "13:00\\n☀️\\n19°\\n0%", "14:00\\n☀️\\n20°\\n0%",
+            "15:00\\n🌤️\\n20°\\n5%", "16:00\\n🌤️\\n19°\\n5%", "17:00\\n☁️\\n18°\\n10%"
+        )
+        listOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6)
+            .forEachIndexed { index, id -> preview.findViewById<TextView>(id).text = previewHourly[index] }
         preview.findViewById<TextView>(R.id.daily_label).text = "URMĂTOARELE 7 ZILE"
         preview.findViewById<TextView>(R.id.daily).text =
             "Azi ☀️ 18°/12°  ·  Lun 🌤️ 20°/13°\nMar ☁️ 19°/11°  ·  Mie 🌧️ 17°/10°\nJoi 🌦️ 18°/9°  ·  Vin ☀️ 21°/12°\nSâm 🌤️ 22°/13°"
@@ -76,10 +78,10 @@ class SettingsActivity : Activity() {
             "size_temperature" to R.id.temperature,
             "size_condition" to R.id.condition,
             "size_details" to R.id.details,
-            "size_hourly" to R.id.hourly_left,
+            "size_hourly" to R.id.hourly_1,
             "size_daily" to R.id.daily
         ).forEach { (key, id) -> previewViews[key] = preview.findViewById(id) }
-        previewViews["size_hourly_right"] = preview.findViewById(R.id.hourly_right)
+        listOf(R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6).forEachIndexed { index, id -> previewViews["size_hourly_$index"] = preview.findViewById(id) }
         previewViews["label_hourly"] = preview.findViewById(R.id.hourly_label)
         previewViews["label_daily"] = preview.findViewById(R.id.daily_label)
         previewScroll.addView(preview, FrameLayout.LayoutParams(
@@ -155,7 +157,7 @@ class SettingsActivity : Activity() {
         sizes.forEach { (key, defaultValue) ->
             previewViews[key]?.textSize = prefs.getInt(key, defaultValue).toFloat()
         }
-        previewViews["size_hourly_right"]?.textSize = prefs.getInt("size_hourly", 14).toFloat()
+        previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = prefs.getInt("size_hourly", 14).toFloat() }
         previewViews["label_hourly"]?.textSize = (prefs.getInt("size_hourly", 14) + 1).toFloat()
         previewViews["label_daily"]?.textSize = (prefs.getInt("size_daily", 11) + 1).toFloat()
     }
@@ -182,7 +184,7 @@ class SettingsActivity : Activity() {
                         prefs.edit().putInt(preferenceKey, value).apply()
                         previewViews[preferenceKey]?.textSize = value.toFloat()
                         if (preferenceKey == "size_hourly") {
-                            previewViews["size_hourly_right"]?.textSize = value.toFloat()
+                            previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = value.toFloat() }
                             previewViews["label_hourly"]?.textSize = (value + 1).toFloat()
                         }
                         if (preferenceKey == "size_daily") {
