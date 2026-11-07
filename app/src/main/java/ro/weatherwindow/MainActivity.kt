@@ -285,7 +285,7 @@ class MainActivity : Activity() {
         currentCard.addView(label(w.city, 17f, Color.rgb(203, 221, 235), true))
         currentCard.addView(label("${w.temperature}°", 48f, Color.WHITE, true))
         currentCard.addView(label("${WeatherRepository.symbol(w.code)}  ${WeatherRepository.condition(w.code)}", 19f, Color.WHITE, true))
-        currentCard.addView(label("Se simte ca ${w.feelsLike}°     •     Umiditate ${w.humidity}%     •     Vânt ${w.wind} km/h", 13f, Color.rgb(204, 218, 229)))
+        currentCard.addView(label("Se simte ca ${w.feelsLike}°     •     Vânt ${w.wind} km/h     •     Apus ${w.sunset}", 13f, Color.rgb(204, 218, 229)))
         forecastContainer.addView(currentCard, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
             bottomMargin = dp(22)
         })
