@@ -107,7 +107,7 @@ object WeatherRepository {
             "${times.optString(i).takeLast(5)} ${symbol(hourlyCodes.optInt(i))} ${temps.optDouble(i).toInt()}°/${rain.optInt(i)}%"
         }
         val hourlyColumns = (start until minOf(start + 6, times.length())).map { i ->
-            "${times.optString(i).takeLast(5)}\\n${symbol(hourlyCodes.optInt(i))}\\n${temps.optDouble(i).toInt()}°\\n${rain.optInt(i)}%"
+            "${times.optString(i).takeLast(5)}\n${symbol(hourlyCodes.optInt(i))}\n${temps.optDouble(i).toInt()}°\n${rain.optInt(i)}%"
         }
         val dayParts = (0 until minOf(7, daily.getJSONArray("time").length())).map { i ->
             "${dayLabel(daily.getJSONArray("time").optString(i), i)} ${symbol(daily.getJSONArray("weather_code").optInt(i))} ${daily.getJSONArray("temperature_2m_max").optDouble(i).toInt()}°/${daily.getJSONArray("temperature_2m_min").optDouble(i).toInt()}°"
