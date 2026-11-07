@@ -125,7 +125,8 @@ object WeatherRepository {
             hourParts.drop(3).take(3).joinToString("\n"),
             hourlyColumns,
             hourParts.joinToString("\n"),
-            dayParts.chunked(2).joinToString("\n") { row -> row.joinToString("  ·  ") }
+            dayParts,
+            dayParts.joinToString("\n")
         )
     }
 
