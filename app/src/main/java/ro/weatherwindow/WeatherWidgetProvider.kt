@@ -68,13 +68,13 @@ class WeatherWidgetProvider : AppWidgetProvider() {
 
         private fun applyTextSizes(context: Context, views: RemoteViews) {
             val prefs = context.getSharedPreferences("weather", Context.MODE_PRIVATE)
-            views.setTextViewTextSize(R.id.location, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_location", 14).toFloat())
-            views.setTextViewTextSize(R.id.temperature, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_temperature", 34).toFloat())
-            views.setTextViewTextSize(R.id.condition, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_condition", 12).toFloat())
-            views.setTextViewTextSize(R.id.details, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_details", 9).toFloat())
-            views.setTextViewTextSize(R.id.hourly, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_hourly", 8).toFloat())
+            views.setTextViewTextSize(R.id.location, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_location", 22).toFloat())
+            views.setTextViewTextSize(R.id.temperature, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_temperature", 53).toFloat())
+            views.setTextViewTextSize(R.id.condition, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_condition", 18).toFloat())
+            views.setTextViewTextSize(R.id.details, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_details", 16).toFloat())
+            views.setTextViewTextSize(R.id.hourly, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_hourly", 14).toFloat())
             views.setTextViewTextSize(R.id.hourly_label, android.util.TypedValue.COMPLEX_UNIT_SP, (prefs.getInt("size_hourly", 8) + 1).toFloat())
-            views.setTextViewTextSize(R.id.daily, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_daily", 8).toFloat())
+            views.setTextViewTextSize(R.id.daily, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_daily", 11).toFloat())
             views.setTextViewTextSize(R.id.daily_label, android.util.TypedValue.COMPLEX_UNIT_SP, (prefs.getInt("size_daily", 8) + 1).toFloat())
         }
 
