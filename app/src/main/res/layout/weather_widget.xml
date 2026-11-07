@@ -164,20 +164,83 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:text="URMĂTOARELE 7 ZILE"
+            android:text="URMĂTOARELE 6 ZILE"
             android:textColor="#AFC8DA"
             android:textSize="8sp"
             android:textStyle="bold" />
-        <TextView
-            android:id="@+id/daily"
+        <LinearLayout
+            android:id="@+id/daily_grid"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text="Prognoza pe 7 zile va apărea aici"
-            android:textColor="#F0F5F8"
-            android:textSize="8sp"
-            android:lineSpacingExtra="0dp"
-            android:includeFontPadding="false"
-            android:maxLines="8" />
+            android:orientation="horizontal"
+            android:gravity="top"
+            android:layout_marginTop="3dp">
+            <TextView
+                android:id="@+id/daily_1"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="--\n--°/--°\n🌤️\n--%"
+                android:textColor="#F0F5F8"
+                android:textSize="8sp"
+                android:lineSpacingExtra="1dp"
+                android:includeFontPadding="false" />
+            <TextView
+                android:id="@+id/daily_2"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="--\n--°/--°\n🌤️\n--%"
+                android:textColor="#F0F5F8"
+                android:textSize="8sp"
+                android:lineSpacingExtra="1dp"
+                android:includeFontPadding="false" />
+            <TextView
+                android:id="@+id/daily_3"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="--\n--°/--°\n🌤️\n--%"
+                android:textColor="#F0F5F8"
+                android:textSize="8sp"
+                android:lineSpacingExtra="1dp"
+                android:includeFontPadding="false" />
+            <TextView
+                android:id="@+id/daily_4"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="--\n--°/--°\n🌤️\n--%"
+                android:textColor="#F0F5F8"
+                android:textSize="8sp"
+                android:lineSpacingExtra="1dp"
+                android:includeFontPadding="false" />
+            <TextView
+                android:id="@+id/daily_5"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="--\n--°/--°\n🌤️\n--%"
+                android:textColor="#F0F5F8"
+                android:textSize="8sp"
+                android:lineSpacingExtra="1dp"
+                android:includeFontPadding="false" />
+            <TextView
+                android:id="@+id/daily_6"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="--\n--°/--°\n🌤️\n--%"
+                android:textColor="#F0F5F8"
+                android:textSize="8sp"
+                android:lineSpacingExtra="1dp"
+                android:includeFontPadding="false" />
+        </LinearLayout>
     </LinearLayout>
 </FrameLayout>
