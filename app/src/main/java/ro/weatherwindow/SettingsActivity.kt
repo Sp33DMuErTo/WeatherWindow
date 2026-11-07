@@ -141,9 +141,9 @@ class SettingsActivity : Activity() {
             text = "Resetează toate setările"
             setOnClickListener {
                 prefs.edit()
-                    .putInt("size_location", 22).putInt("size_temperature", 53)
-                    .putInt("size_condition", 18).putInt("size_details", 16)
-                    .putInt("size_hourly", 12).putInt("size_daily", 12)
+                    .putInt("shared_size_location", 22).putInt("shared_size_temperature", 53)
+                    .putInt("shared_size_condition", 18).putInt("shared_size_details", 16)
+                    .putInt("shared_size_hourly", 12).putInt("shared_size_daily", 12)
                     .putInt("background_opacity", 100)
                     .apply()
                 WeatherWidgetProvider.updateTextSizes(this@SettingsActivity)
@@ -181,10 +181,10 @@ class SettingsActivity : Activity() {
         sizes.forEach { (key, defaultValue) ->
             previewViews[key]?.textSize = prefs.getInt(key, defaultValue).toFloat()
         }
-        previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = prefs.getInt("size_hourly", 12).coerceIn(8, 16).toFloat() }
-        previewViews.filterKeys { it.startsWith("size_daily") }.values.forEach { it.textSize = prefs.getInt("size_daily", 12).coerceIn(8, 16).toFloat() }
-        previewViews["label_hourly"]?.textSize = (prefs.getInt("size_hourly", 12).coerceIn(8, 16) + 1).toFloat()
-        previewViews["label_daily"]?.textSize = (prefs.getInt("size_daily", 12).coerceIn(8, 16) + 1).toFloat()
+        previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = prefs.getInt("shared_size_hourly", prefs.getInt("size_hourly_5x4", 12)).coerceIn(8, 16).toFloat() }
+        previewViews.filterKeys { it.startsWith("size_daily") }.values.forEach { it.textSize = prefs.getInt("shared_size_daily", prefs.getInt("size_daily_5x4", 12)).coerceIn(8, 16).toFloat() }
+        previewViews["label_hourly"]?.textSize = (prefs.getInt("shared_size_hourly", prefs.getInt("size_hourly_5x4", 12)).coerceIn(8, 16) + 1).toFloat()
+        previewViews["label_daily"]?.textSize = (prefs.getInt("shared_size_daily", prefs.getInt("size_daily_5x4", 12)).coerceIn(8, 16) + 1).toFloat()
     }
 
     private fun addBackgroundOpacityControl(parent: LinearLayout) {
@@ -224,7 +224,7 @@ class SettingsActivity : Activity() {
         parent: LinearLayout, label: String, preferenceKey: String,
         min: Int, max: Int, defaultValue: Int
     ) {
-        val storedKey = preferenceKey
+        val storedKey = "shared_${preferenceKey}"
         val current = prefs.getInt(storedKey, defaultValue).coerceIn(min, max)
         val valueLabel = TextView(this).apply {
             text = "$label: ${current}sp"
