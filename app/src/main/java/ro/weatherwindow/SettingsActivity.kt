@@ -79,10 +79,11 @@ class SettingsActivity : Activity() {
             "size_condition" to R.id.condition,
             "size_details" to R.id.details,
             "size_hourly" to R.id.hourly_1,
-            "size_daily" to R.id.daily
+            "size_daily" to R.id.daily_1
         ).forEach { (key, id) -> previewViews[key] = preview.findViewById(id) }
         listOf(R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6).forEachIndexed { index, id -> previewViews["size_hourly_$index"] = preview.findViewById(id) }
         previewViews["label_hourly"] = preview.findViewById(R.id.hourly_label)
+        listOf(R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6).forEachIndexed { index, id -> previewViews["size_daily_$index"] = preview.findViewById(id) }
         previewViews["label_daily"] = preview.findViewById(R.id.daily_label)
         previewScroll.addView(preview, FrameLayout.LayoutParams(
             FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT
@@ -158,6 +159,7 @@ class SettingsActivity : Activity() {
             previewViews[key]?.textSize = prefs.getInt(key, defaultValue).toFloat()
         }
         previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = prefs.getInt("size_hourly", 14).toFloat() }
+        previewViews.filterKeys { it.startsWith("size_daily") }.values.forEach { it.textSize = prefs.getInt("size_daily", 11).toFloat() }
         previewViews["label_hourly"]?.textSize = (prefs.getInt("size_hourly", 14) + 1).toFloat()
         previewViews["label_daily"]?.textSize = (prefs.getInt("size_daily", 11) + 1).toFloat()
     }
@@ -188,6 +190,7 @@ class SettingsActivity : Activity() {
                             previewViews["label_hourly"]?.textSize = (value + 1).toFloat()
                         }
                         if (preferenceKey == "size_daily") {
+                            previewViews.filterKeys { it.startsWith("size_daily") }.values.forEach { it.textSize = value.toFloat() }
                             previewViews["label_daily"]?.textSize = (value + 1).toFloat()
                         }
                         WeatherWidgetProvider.updateTextSizes(this@SettingsActivity)
