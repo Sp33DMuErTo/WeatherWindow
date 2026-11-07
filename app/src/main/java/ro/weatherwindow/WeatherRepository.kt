@@ -26,7 +26,8 @@ data class WeatherSnapshot(
     val dailyColumns: List<String>,
     val daily: String,
     val sunrise: String = "06:00",
-    val timezone: String = "Europe/Bucharest"
+    val timezone: String = "Europe/Bucharest",
+    val precipitationProbability: Int = 0
 )
 
 data class HourlyForecast(
@@ -135,7 +136,7 @@ object WeatherRepository {
             if (times.optString(i) >= now) { start = i; break }
         }
         val hourParts = (start until minOf(start + 24, times.length())).map { i ->
-            "${times.optString(i).takeLast(5)} ${symbol(hourlyCodes.optInt(i))} ${temps.optDouble(i).toInt()}°/💧 ${rain.optInt(i)}%"
+            "${times.optString(i).takeLast(5)} ${symbol(hourlyCodes.optInt(i))} ${temps.optDouble(i).toInt()}°/${rain.optInt(i)}%"
         }
         val hourlyForecast = (start until minOf(start + 24, times.length())).map { i ->
             HourlyForecast(
@@ -149,7 +150,7 @@ object WeatherRepository {
             "${times.optString(i).takeLast(5)}\n${temps.optDouble(i).toInt()}°\n${symbol(hourlyCodes.optInt(i))}\n💧 ${rain.optInt(i)}%"
         }
         val dayParts = (1 until minOf(7, daily.getJSONArray("time").length())).map { i ->
-            "${dayLabel(daily.getJSONArray("time").optString(i), i)}\n${daily.getJSONArray("temperature_2m_max").optDouble(i).toInt()}°/${daily.getJSONArray("temperature_2m_min").optDouble(i).toInt()}°\n${symbol(daily.getJSONArray("weather_code").optInt(i))}\n💧 ${daily.getJSONArray("precipitation_probability_max").optInt(i)}%"
+            "${dayLabel(daily.getJSONArray("time").optString(i), i)}\n${daily.getJSONArray("temperature_2m_max").optDouble(i).toInt()}°/${daily.getJSONArray("temperature_2m_min").optDouble(i).toInt()}°\n${symbol(daily.getJSONArray("weather_code").optInt(i))}\n${daily.getJSONArray("precipitation_probability_max").optInt(i)}%"
         }
         val city = cityOverride ?: context.getSharedPreferences("weather", Context.MODE_PRIVATE).getString("city", "Locație salvată") ?: "Locație salvată"
         return WeatherSnapshot(
@@ -168,7 +169,8 @@ object WeatherRepository {
             dayParts,
             dayParts.joinToString("\n"),
             sunrise,
-            timezone
+            timezone,
+            rain.optInt(start)
         )
     }
 
