@@ -128,7 +128,36 @@ class MainActivity : Activity() {
             setTextColor(Color.WHITE)
             setPadding(0, 22, 0, 0)
         }
-        listOf(title, subtitle, cityInput, cityButton, gpsButton, refreshButton, status).forEach {
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+        }
+        val titleBlock = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(title)
+            addView(subtitle)
+        }
+        header.addView(titleBlock, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+        val settingsIcon = TextView(this).apply {
+            text = "⚙"
+            textSize = 23f
+            gravity = Gravity.CENTER
+            setTextColor(Color.WHITE)
+            contentDescription = "Setări widget"
+            isClickable = true
+            isFocusable = true
+            background = roundedBackground(Color.rgb(38, 66, 88), Color.rgb(78, 116, 143))
+            setOnClickListener {
+                startActivity(android.content.Intent(this@MainActivity, SettingsActivity::class.java))
+            }
+        }
+        header.addView(settingsIcon, LinearLayout.LayoutParams(dp(40), dp(40)).apply {
+            leftMargin = dp(10)
+        })
+        root.addView(header, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            bottomMargin = dp(18)
+        })
+        listOf(cityInput, cityButton, gpsButton, refreshButton, status).forEach {
             root.addView(it, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                 bottomMargin = 12
             })
@@ -138,15 +167,6 @@ class MainActivity : Activity() {
             bottomMargin = 18
         })
 
-        val settingsButton = Button(this).apply {
-            text = "⚙️ Setări widget"
-            setOnClickListener {
-                startActivity(android.content.Intent(this@MainActivity, SettingsActivity::class.java))
-            }
-        }
-        root.addView(settingsButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
-            bottomMargin = 12
-        })
 
         val page = ScrollView(this).apply {
             isFillViewport = false
