@@ -15,12 +15,15 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             val lat = prefs.getFloat("lat", 0f).toDouble()
             val lon = prefs.getFloat("lon", 0f).toDouble()
             val city = prefs.getString("city", "Locația mea") ?: "Locația mea"
+            val pendingResult = goAsync()
             kotlin.concurrent.thread {
                 try {
                     val weather = WeatherRepository.load(context, lat, lon, city)
                     updateAll(context, weather)
                 } catch (_: Exception) {
                     updatePlaceholders(context, ids)
+                } finally {
+                    pendingResult.finish()
                 }
             }
         } else updatePlaceholders(context, ids)
