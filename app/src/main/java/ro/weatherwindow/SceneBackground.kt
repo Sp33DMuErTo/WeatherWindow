@@ -40,8 +40,8 @@ internal object SceneBackground {
         val daylight = elapsed in 0..dayLength
         val progress = (elapsed.toFloat() / dayLength).coerceIn(0f, 1f)
         val minutesFromRise = (now.toSecondOfDay() - rise.toSecondOfDay()) / 60
-        val minutesToSet = (set.toSecondOfDay() - now.toSecondOfDay()) / 60
-        val twilight = !daylight && (minutesFromRise in -55..0 || minutesToSet in 0..55)
+        val minutesAfterSet = (now.toSecondOfDay() - set.toSecondOfDay()) / 60
+        val twilight = !daylight && (minutesFromRise in -55..0 || minutesAfterSet in 0..55)
         val night = !daylight && !twilight
 
         val weather = when {
