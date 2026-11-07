@@ -16,6 +16,7 @@ data class WeatherSnapshot(
     val feelsLike: Int,
     val humidity: Int,
     val wind: Int,
+    val sunset: String,
     val code: Int,
     val hourlyLeft: String,
     val hourlyRight: String,
@@ -93,11 +94,12 @@ object WeatherRepository {
     }
 
     fun load(context: Context, lat: Double, lon: Double, cityOverride: String? = null): WeatherSnapshot {
-        val address = "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&hourly=temperature_2m,precipitation_probability,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=7&timezone=auto"
+        val address = "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&hourly=temperature_2m,precipitation_probability,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&forecast_days=7&timezone=auto"
         val root = getJson(address)
         val current = root.getJSONObject("current")
         val hourly = root.getJSONObject("hourly")
         val daily = root.getJSONObject("daily")
+        val sunset = daily.getJSONArray("sunset").optString(0).takeLast(5)
         val times = hourly.getJSONArray("time")
         val temps = hourly.getJSONArray("temperature_2m")
         val rain = hourly.getJSONArray("precipitation_probability")
@@ -108,7 +110,7 @@ object WeatherRepository {
             if (times.optString(i) >= now) { start = i; break }
         }
         val hourParts = (start until minOf(start + 24, times.length())).map { i ->
-            "${times.optString(i).takeLast(5)} ${symbol(hourlyCodes.optInt(i))} ${temps.optDouble(i).toInt()}°/${rain.optInt(i)}%"
+            "${times.optString(i).takeLast(5)} ${symbol(hourlyCodes.optInt(i))} ${temps.optDouble(i).toInt()}°/💧 ${rain.optInt(i)}%"
         }
         val hourlyForecast = (start until minOf(start + 24, times.length())).map { i ->
             HourlyForecast(times.optString(i).takeLast(5), temps.optDouble(i).toInt(), rain.optInt(i), hourlyCodes.optInt(i))
@@ -126,6 +128,7 @@ object WeatherRepository {
             current.getDouble("apparent_temperature").toInt(),
             current.getInt("relative_humidity_2m"),
             current.getDouble("wind_speed_10m").toInt(),
+            sunset,
             current.getInt("weather_code"),
             hourParts.take(3).joinToString("\n"),
             hourParts.drop(3).take(3).joinToString("\n"),
