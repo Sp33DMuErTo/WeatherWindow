@@ -116,6 +116,20 @@ internal object SceneBackground {
             }
         }
 
+        // Clouds sit above the landscape and remain independent from the sun/moon.
+        when (weather) {
+            1 -> drawCloud(canvas, p, 478f + drift * 18f, 118f, 0.82f, 0xFFDCE8EF.toInt())
+            2 -> {
+                drawCloud(canvas, p, 205f + drift * 8f, 102f, 1.02f, 0xFFD0DCE5.toInt())
+                drawCloud(canvas, p, 520f - drift * 9f, 132f, 0.90f, 0xFFBFCBD5.toInt())
+            }
+            3, 4 -> drawCloud(canvas, p, 500f + drift * 8f, 126f, 1.12f, if (weather == 4) 0xFFE2EAF0.toInt() else 0xFF718A9D.toInt())
+            5 -> {
+                drawCloud(canvas, p, 205f, 112f, 1.08f, 0xFF536477.toInt())
+                drawCloud(canvas, p, 510f, 120f, 1.12f, 0xFF46566A.toInt())
+            }
+        }
+
         // Distant hills and layered meadow.
         p.color = if (night) 0xFF293E43.toInt() else 0xFF648C75.toInt()
         val hill = Path().apply {
@@ -267,6 +281,20 @@ internal object SceneBackground {
         canvas.drawRect(0f, 0f, W.toFloat(), H.toFloat(), p)
         p.shader = null
         return bitmap
+    }
+
+    private fun drawCloud(canvas: Canvas, p: Paint, cx: Float, cy: Float, scale: Float, color: Int) {
+        p.color = color
+        canvas.drawCircle(cx - 34f * scale, cy + 8f * scale, 28f * scale, p)
+        canvas.drawCircle(cx, cy - 10f * scale, 39f * scale, p)
+        canvas.drawCircle(cx + 38f * scale, cy + 8f * scale, 27f * scale, p)
+        canvas.drawRoundRect(
+            cx - 61f * scale, cy + 2f * scale,
+            cx + 64f * scale, cy + 34f * scale,
+            18f * scale, 18f * scale, p
+        )
+        p.color = 0x22FFFFFF
+        canvas.drawCircle(cx - 8f * scale, cy - 20f * scale, 13f * scale, p)
     }
 
     private fun parseTime(value: String, fallback: LocalTime): LocalTime =
