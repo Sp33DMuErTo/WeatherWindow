@@ -21,19 +21,32 @@ data class WeatherSnapshot(
     val daily: String
 )
 
+data class CitySuggestion(
+    val name: String,
+    val label: String,
+    val latitude: Double,
+    val longitude: Double
+)
+
 object WeatherRepository {
     fun reverseGeocode(context: Context, lat: Double, lon: Double): String? {
-        if (!Geocoder.isPresent()) return null
+        val androidName = if (Geocoder.isPresent()) {
+            try {
+                val geocoder = Geocoder(context, Locale("ro", "RO"))
+                @Suppress("DEPRECATION")
+                val address = geocoder.getFromLocation(lat, lon, 1)?.firstOrNull()
+                address?.locality ?: address?.subLocality ?: address?.subAdminArea ?: address?.adminArea
+            } catch (_: Exception) { null }
+        } else null
+        if (!androidName.isNullOrBlank()) return androidName
+
+        // Fallback dacă serviciul Android nu întoarce numele localității.
         return try {
-            val geocoder = Geocoder(context, Locale("ro", "RO"))
-            @Suppress("DEPRECATION")
-            val address = geocoder.getFromLocation(lat, lon, 1)?.firstOrNull()
-            address?.locality
-                ?: address?.subAdminArea
-                ?: address?.adminArea
-        } catch (_: Exception) {
-            null
-        }
+            val root = getJson("https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lon&zoom=10&addressdetails=1")
+            val address = root.optJSONObject("address") ?: return null
+            listOf("city", "town", "village", "municipality", "hamlet", "county")
+                .firstNotNullOfOrNull { key -> address.optString(key).takeIf { it.isNotBlank() && it != "null" } }
+        } catch (_: Exception) { null }
     }
 
     private fun getJson(address: String): JSONObject {
@@ -41,7 +54,8 @@ object WeatherRepository {
             connectTimeout = 12000
             readTimeout = 12000
             requestMethod = "GET"
-            setRequestProperty("User-Agent", "WeatherWindow/1.0")
+            setRequestProperty("User-Agent", "WeatherWindow/1.2 (Android weather widget)")
+            setRequestProperty("Accept-Language", "ro")
         }
         return try {
             JSONObject(connection.inputStream.bufferedReader().use { it.readText() })
@@ -57,6 +71,20 @@ object WeatherRepository {
         if (results.length() == 0) throw Exception("Nu am găsit orașul. Verifică denumirea.")
         val item = results.getJSONObject(0)
         return Pair(item.getDouble("latitude"), item.getDouble("longitude"))
+    }
+
+    fun searchCities(query: String): List<CitySuggestion> {
+        val q = URLEncoder.encode(query, "UTF-8")
+        val root = getJson("https://geocoding-api.open-meteo.com/v1/search?name=$q&count=8&language=ro&format=json")
+        val results = root.optJSONArray("results") ?: return emptyList()
+        return (0 until results.length()).mapNotNull { index ->
+            val item = results.optJSONObject(index) ?: return@mapNotNull null
+            val name = item.optString("name").takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            val admin = item.optString("admin1").takeIf { it.isNotBlank() && it != "null" }
+            val country = item.optString("country").takeIf { it.isNotBlank() && it != "null" }
+            val label = listOfNotNull(name, admin, country).distinct().joinToString(", ")
+            CitySuggestion(name, label, item.getDouble("latitude"), item.getDouble("longitude"))
+        }
     }
 
     fun load(context: Context, lat: Double, lon: Double, cityOverride: String? = null): WeatherSnapshot {
