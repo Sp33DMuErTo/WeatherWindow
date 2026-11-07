@@ -19,6 +19,7 @@ data class WeatherSnapshot(
     val code: Int,
     val hourlyLeft: String,
     val hourlyRight: String,
+    val hourlyFull: String,
     val daily: String
 )
 
@@ -115,8 +116,9 @@ object WeatherRepository {
             current.getInt("relative_humidity_2m"),
             current.getDouble("wind_speed_10m").toInt(),
             current.getInt("weather_code"),
-            hourParts.take(12).joinToString("\n"),
-            hourParts.drop(12).joinToString("\n"),
+            hourParts.take(3).joinToString("\n"),
+            hourParts.drop(3).take(3).joinToString("\n"),
+            hourParts.joinToString("\n"),
             dayParts.chunked(2).joinToString("\n") { row -> row.joinToString("  ·  ") }
         )
     }
