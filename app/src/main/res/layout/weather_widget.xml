@@ -85,31 +85,73 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="top"
-            android:layout_marginTop="2dp">
-
+            android:layout_marginTop="4dp">
             <TextView
-                android:id="@+id/hourly_left"
+                android:id="@+id/hourly_1"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="Prognoza orară"
+                android:gravity="center"
+                android:text="--:--\n🌤️\n--°\n--%"
                 android:textColor="#F0F5F8"
                 android:textSize="8sp"
-                android:lineSpacingExtra="0dp"
-                android:includeFontPadding="false"
-                android:fontFamily="monospace" />
-
+                android:lineSpacingExtra="1dp"
+                android:includeFontPadding="false" />
             <TextView
-                android:id="@+id/hourly_right"
+                android:id="@+id/hourly_2"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:layout_marginStart="5dp"
+                android:gravity="center"
+                android:text="--:--\n🌤️\n--°\n--%"
                 android:textColor="#F0F5F8"
                 android:textSize="8sp"
-                android:lineSpacingExtra="0dp"
-                android:includeFontPadding="false"
-                android:fontFamily="monospace" />
+                android:lineSpacingExtra="1dp"
+                android:includeFontPadding="false" />
+            <TextView
+                android:id="@+id/hourly_3"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="--:--\n🌤️\n--°\n--%"
+                android:textColor="#F0F5F8"
+                android:textSize="8sp"
+                android:lineSpacingExtra="1dp"
+                android:includeFontPadding="false" />
+            <TextView
+                android:id="@+id/hourly_4"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="--:--\n🌤️\n--°\n--%"
+                android:textColor="#F0F5F8"
+                android:textSize="8sp"
+                android:lineSpacingExtra="1dp"
+                android:includeFontPadding="false" />
+            <TextView
+                android:id="@+id/hourly_5"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="--:--\n🌤️\n--°\n--%"
+                android:textColor="#F0F5F8"
+                android:textSize="8sp"
+                android:lineSpacingExtra="1dp"
+                android:includeFontPadding="false" />
+            <TextView
+                android:id="@+id/hourly_6"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="--:--\n🌤️\n--°\n--%"
+                android:textColor="#F0F5F8"
+                android:textSize="8sp"
+                android:lineSpacingExtra="1dp"
+                android:includeFontPadding="false" />
         </LinearLayout>
 
         <TextView
