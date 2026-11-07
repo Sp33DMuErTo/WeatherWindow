@@ -4,6 +4,10 @@ import android.app.Activity
 import android.app.AlertDialog
 import android.content.Context
 import android.graphics.Color
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.view.MotionEvent
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.View
@@ -15,6 +19,8 @@ import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.SeekBar
 import android.widget.TextView
+import kotlin.math.atan2
+import kotlin.math.sqrt
 
 class SettingsActivity : Activity() {
     private val prefs by lazy { getSharedPreferences("weather", Context.MODE_PRIVATE) }
@@ -295,51 +301,56 @@ class SettingsActivity : Activity() {
     private fun showCustomTextColorDialog(onApplied: () -> Unit) {
         val existing = if (prefs.getBoolean("text_color_enabled", false))
             prefs.getInt("text_color", Color.WHITE) else Color.WHITE
+        var chosenColor = existing
         val panel = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(20), dp(8), dp(20), dp(4))
+            orientation = LinearLayout.HORIZONTAL
+            gravity = android.view.Gravity.CENTER_VERTICAL
+            setPadding(dp(8), dp(8), dp(8), dp(8))
         }
-        val sample = TextView(this).apply {
-            text = "WeatherWindow  18°  ·  Prognoză meteo"
-            textSize = 19f
-            typeface = Typeface.DEFAULT_BOLD
-            setPadding(0, dp(8), 0, dp(12))
+        val wheel = ColorWheelView(this, existing) { color ->
+            chosenColor = color
+            sample.setTextColor(color)
+            hexLabel.text = String.format("#%06X", 0xFFFFFF and color)
+        }
+        panel.addView(wheel, LinearLayout.LayoutParams(dp(220), dp(220)))
+        val previewColumn = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = android.view.Gravity.CENTER
+            setPadding(dp(8), 0, 0, 0)
+        }
+        val eye = TextView(this).apply {
+            text = "👁"
+            textSize = 30f
             gravity = android.view.Gravity.CENTER
         }
-        panel.addView(sample)
-        val bars = arrayOfNulls<SeekBar>(3)
-        val labels = arrayOf("Roșu", "Verde", "Albastru")
-        val initial = intArrayOf(Color.red(existing), Color.green(existing), Color.blue(existing))
-        val channelLabels = arrayOfNulls<TextView>(3)
-        var chosenColor = existing
-        fun updateSample() {
-            val rgb = IntArray(3) { bars[it]?.progress ?: initial[it] }
-            chosenColor = Color.rgb(rgb[0], rgb[1], rgb[2])
-            sample.setTextColor(chosenColor)
-            for (i in 0..2) channelLabels[i]?.text = labels[i] + ": " + rgb[i]
+        val sample = TextView(this).apply {
+            text = "Aa"
+            textSize = 34f
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = android.view.Gravity.CENTER
+            setTextColor(existing)
+            setPadding(dp(8), dp(12), dp(8), dp(12))
         }
-        for (i in 0..2) {
-            val channelLabel = TextView(this).apply {
-                textSize = 13f
-                setTextColor(Color.WHITE)
-            }
-            channelLabels[i] = channelLabel
-            panel.addView(channelLabel)
-            val bar = SeekBar(this).apply {
-                max = 255
-                progress = initial[i]
-                setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
-                    override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) = updateSample()
-                    override fun onStartTrackingTouch(seekBar: SeekBar?) {}
-                    override fun onStopTrackingTouch(seekBar: SeekBar?) {}
-                })
-            }
-            bars[i] = bar
-            panel.addView(bar)
+        val hexLabel = TextView(this).apply {
+            text = String.format("#%06X", 0xFFFFFF and existing)
+            textSize = 11f
+            setTextColor(Color.WHITE)
+            gravity = android.view.Gravity.CENTER
+            setPadding(0, dp(5), 0, 0)
         }
-        updateSample()
+        previewColumn.addView(eye)
+        previewColumn.addView(sample)
+        previewColumn.addView(TextView(this).apply {
+            text = "Previzualizare"
+            textSize = 11f
+            setTextColor(Color.LTGRAY)
+            gravity = android.view.Gravity.CENTER
+        })
+        previewColumn.addView(hexLabel)
+        panel.addView(previewColumn, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
         AlertDialog.Builder(this)
-            .setTitle("Culoare personalizată · RGB")
+            .setTitle("Alege culoarea")
+            .setMessage("Glisează cu degetul pe cerc pentru a selecta nuanța.")
             .setView(panel)
             .setNegativeButton("Anulează", null)
             .setPositiveButton("Aplică") { _, _ ->
@@ -349,6 +360,114 @@ class SettingsActivity : Activity() {
                 onApplied()
             }
             .show()
+    }
+
+    private inner class ColorWheelView(
+        context: Context,
+        initialColor: Int,
+        private val onColorChanged: (Int) -> Unit
+    ) : View(context) {
+        private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        private var wheelBitmap: Bitmap? = null
+        private var centerX = 0f
+        private var centerY = 0f
+        private var radius = 0f
+        private var hue = 0f
+        private var saturation = 0f
+        private var selectedColor = initialColor
+
+        init {
+            val hsv = FloatArray(3)
+            Color.colorToHSV(initialColor, hsv)
+            hue = hsv[0]
+            saturation = hsv[1]
+            isClickable = true
+        }
+
+        override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+            val desired = dp(220)
+            setMeasuredDimension(
+                resolveSize(desired, widthMeasureSpec),
+                resolveSize(desired, heightMeasureSpec)
+            )
+        }
+
+        override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+            centerX = w / 2f
+            centerY = h / 2f
+            radius = (minOf(w, h) / 2f) - dp(9)
+            val side = minOf(w, h).coerceAtLeast(1)
+            val pixels = IntArray(side * side)
+            val cx = (side - 1) / 2f
+            val cy = (side - 1) / 2f
+            val r = side / 2f - 2f
+            for (y in 0 until side) {
+                for (x in 0 until side) {
+                    val dx = x - cx
+                    val dy = y - cy
+                    val distance = sqrt(dx * dx + dy * dy)
+                    if (distance <= r) {
+                        val angle = Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat()
+                        val pixelHue = (angle + 360f) % 360f
+                        val sat = (distance / r).coerceIn(0f, 1f)
+                        pixels[y * side + x] = Color.HSVToColor(floatArrayOf(pixelHue, sat, 1f))
+                    } else {
+                        pixels[y * side + x] = Color.TRANSPARENT
+                    }
+                }
+            }
+            wheelBitmap = Bitmap.createBitmap(pixels, side, side, Bitmap.Config.ARGB_8888)
+            invalidate()
+        }
+
+        override fun onDraw(canvas: Canvas) {
+            super.onDraw(canvas)
+            val bitmap = wheelBitmap ?: return
+            val side = minOf(width, height).toFloat()
+            val left = (width - side) / 2f
+            val top = (height - side) / 2f
+            canvas.drawBitmap(bitmap, null, android.graphics.RectF(left, top, left + side, top + side), paint)
+            val angle = Math.toRadians(hue.toDouble())
+            val markerRadius = radius * saturation
+            val x = centerX + (kotlin.math.cos(angle) * markerRadius).toFloat()
+            val y = centerY + (kotlin.math.sin(angle) * markerRadius).toFloat()
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = dp(3).toFloat()
+            paint.color = Color.BLACK
+            canvas.drawCircle(x, y, dp(10).toFloat(), paint)
+            paint.strokeWidth = dp(2).toFloat()
+            paint.color = Color.WHITE
+            canvas.drawCircle(x, y, dp(10).toFloat(), paint)
+            paint.style = Paint.Style.FILL
+        }
+
+        override fun onTouchEvent(event: MotionEvent): Boolean {
+            when (event.action) {
+                MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
+                    val dx = event.x - centerX
+                    val dy = event.y - centerY
+                    val distance = sqrt(dx * dx + dy * dy)
+                    if (distance <= radius + dp(12)) {
+                        hue = (Math.toDegrees(atan2(dy.toDouble(), dx.toDouble())).toFloat() + 360f) % 360f
+                        saturation = (distance / radius).coerceIn(0f, 1f)
+                        selectedColor = Color.HSVToColor(floatArrayOf(hue, saturation, 1f))
+                        onColorChanged(selectedColor)
+                        invalidate()
+                    }
+                    return true
+                }
+                MotionEvent.ACTION_UP -> {
+                    performClick()
+                    return true
+                }
+            }
+            return true
+        }
+
+        override fun performClick(): Boolean {
+            super.performClick()
+            return true
+        }
     }
 
     private fun addBackgroundOpacityControl(parent: LinearLayout) {
