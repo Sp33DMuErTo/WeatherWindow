@@ -5,3 +5,6 @@
 /.idea/
 *.iml
 .DS_Store
+
+# Permanent Android release signing key (never commit this file)
+app/weatherwindow-release.jks
