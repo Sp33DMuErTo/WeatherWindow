@@ -81,10 +81,10 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     views.setTextViewText(id, weather.dailyColumns.getOrElse(index) { "--\n--°/--°\n—\n--%" })
                 }
                 applyTextSizes(context, views)
-                applyBackgroundOpacity(context, views)
                 weatherBackground(context, weather.code)?.let {
                     views.setImageViewBitmap(R.id.weather_background, it)
                 }
+                applyBackgroundOpacity(context, views)
                 val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                 views.setOnClickPendingIntent(R.id.widget_root, open)
                 manager.updateAppWidget(id, views)
@@ -138,8 +138,8 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     views.setTextViewText(id, "--\n--°/--°\n—\n--%")
                 }
                 applyTextSizes(context, views)
-                applyBackgroundOpacity(context, views)
                 weatherBackground(context, 3)?.let { views.setImageViewBitmap(R.id.weather_background, it) }
+                applyBackgroundOpacity(context, views)
                 val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                 views.setOnClickPendingIntent(R.id.widget_root, open)
                 AppWidgetManager.getInstance(context).updateAppWidget(id, views)
