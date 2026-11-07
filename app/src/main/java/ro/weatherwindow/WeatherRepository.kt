@@ -56,10 +56,10 @@ object WeatherRepository {
             if (times.optString(i) >= now) { start = i; break }
         }
         val hourParts = (start until minOf(start + 24, times.length())).map { i ->
-            "${times.optString(i).takeLast(5)} ${temps.optDouble(i).toInt()}° ${rain.optInt(i)}%"
+            "${times.optString(i).takeLast(5)} ${temps.optDouble(i).toInt()}°/${rain.optInt(i)}%"
         }
         val dayParts = (0 until minOf(7, daily.getJSONArray("time").length())).map { i ->
-            "${daily.getJSONArray("time").optString(i).takeLast(5)}  ${daily.getJSONArray("temperature_2m_max").optDouble(i).toInt()}°/${daily.getJSONArray("temperature_2m_min").optDouble(i).toInt()}°"
+            "${daily.getJSONArray("time").optString(i).takeLast(5)} ${daily.getJSONArray("temperature_2m_max").optDouble(i).toInt()}°/${daily.getJSONArray("temperature_2m_min").optDouble(i).toInt()}°"
         }
         val city = cityOverride ?: context.getSharedPreferences("weather", Context.MODE_PRIVATE).getString("city", "Locație salvată") ?: "Locație salvată"
         return WeatherSnapshot(
@@ -69,8 +69,8 @@ object WeatherRepository {
             current.getInt("relative_humidity_2m"),
             current.getDouble("wind_speed_10m").toInt(),
             current.getInt("weather_code"),
-            hourParts.chunked(6).joinToString("\n") { row -> row.joinToString("   •   ") },
-            dayParts.joinToString("\n")
+            hourParts.chunked(6).joinToString("\n") { row -> row.joinToString("  ·  ") },
+            dayParts.joinToString("  ·  ")
         )
     }
 
