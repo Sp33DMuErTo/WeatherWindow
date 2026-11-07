@@ -61,7 +61,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 }
                 val dailyIds = intArrayOf(R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6)
                 dailyIds.forEachIndexed { index, id ->
-                    views.setTextViewText(id, weather.dailyColumns.getOrElse(index) { "--\\n--°/--°\\n—\\n--%" })
+                    views.setTextViewText(id, weather.dailyColumns.getOrElse(index) { "--\n--°/--°\n—\n--%" })
                 }
                 applyTextSizes(context, views)
                 weatherBackground(context, weather.code)?.let {
@@ -117,7 +117,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     views.setTextViewText(id, "--:--\n—\n--°\n--%")
                 }
                 intArrayOf(R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6).forEach { id ->
-                    views.setTextViewText(id, "--\\n--°/--°\\n—\\n--%")
+                    views.setTextViewText(id, "--\n--°/--°\n—\n--%")
                 }
                 applyTextSizes(context, views)
                 weatherBackground(context, 3)?.let { views.setImageViewBitmap(R.id.weather_background, it) }
