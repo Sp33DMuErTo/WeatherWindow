@@ -24,6 +24,12 @@ class SettingsActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val storedOpacity = prefs.getInt("background_opacity", 100).coerceIn(0, 100)
+        val snappedOpacity = ((storedOpacity + 5) / 10) * 10
+        if (storedOpacity != snappedOpacity) {
+            prefs.edit().putInt("background_opacity", snappedOpacity).apply()
+            WeatherWidgetProvider.updateBackgroundOpacity(this)
+        }
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(18), dp(12), dp(18), dp(12))
@@ -79,7 +85,7 @@ class SettingsActivity : Activity() {
             .forEachIndexed { index, id -> preview.findViewById<TextView>(id).text = previewDaily[index] }
         previewBackground = preview.findViewById(R.id.weather_background)
         previewOverlay = preview.findViewById(R.id.weather_overlay)
-        val backgroundOpacity = prefs.getInt("background_opacity", 100) / 100f
+        val backgroundOpacity = prefs.getInt("background_opacity", 100).coerceIn(0, 100) / 100f
         previewBackground?.setBackgroundColor(Color.rgb(48, 75, 96))
         previewBackground?.alpha = backgroundOpacity
         previewOverlay?.alpha = backgroundOpacity
@@ -122,8 +128,8 @@ class SettingsActivity : Activity() {
         addTextSizeControl(controls, "Temperatură", "size_temperature", 24, 64, 53)
         addTextSizeControl(controls, "Condiții meteo", "size_condition", 9, 24, 18)
         addTextSizeControl(controls, "Detalii (resimțită, umiditate, vânt)", "size_details", 8, 22, 16)
-        addTextSizeControl(controls, "Prognoză orară", "size_hourly", 7, 20, 14)
-        addTextSizeControl(controls, "Prognoză 6 zile", "size_daily", 7, 18, 11)
+        addTextSizeControl(controls, "Prognoză orară", "size_hourly", 8, 16, 12)
+        addTextSizeControl(controls, "Prognoză 6 zile", "size_daily", 8, 16, 12)
         val controlsScroll = ScrollView(this).apply {
             isFillViewport = true
             addView(controls)
@@ -139,8 +145,8 @@ class SettingsActivity : Activity() {
                     .putInt("size_temperature", 53)
                     .putInt("size_condition", 18)
                     .putInt("size_details", 16)
-                    .putInt("size_hourly", 14)
-                    .putInt("size_daily", 11)
+                    .putInt("size_hourly", 12)
+                    .putInt("size_daily", 12)
                     .putInt("background_opacity", 100)
                     .apply()
                 WeatherWidgetProvider.updateTextSizes(this@SettingsActivity)
@@ -172,20 +178,20 @@ class SettingsActivity : Activity() {
             "size_temperature" to 53,
             "size_condition" to 18,
             "size_details" to 16,
-            "size_hourly" to 14,
-            "size_daily" to 11
+            "size_hourly" to 12,
+            "size_daily" to 12
         )
         sizes.forEach { (key, defaultValue) ->
             previewViews[key]?.textSize = prefs.getInt(key, defaultValue).toFloat()
         }
-        previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = prefs.getInt("size_hourly", 14).toFloat() }
-        previewViews.filterKeys { it.startsWith("size_daily") }.values.forEach { it.textSize = prefs.getInt("size_daily", 11).toFloat() }
+        previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = prefs.getInt("size_hourly", 12).coerceIn(8, 16).toFloat() }
+        previewViews.filterKeys { it.startsWith("size_daily") }.values.forEach { it.textSize = prefs.getInt("size_daily", 12).coerceIn(8, 16).toFloat() }
         previewViews["label_hourly"]?.textSize = (prefs.getInt("size_hourly", 14) + 1).toFloat()
         previewViews["label_daily"]?.textSize = (prefs.getInt("size_daily", 11) + 1).toFloat()
     }
 
     private fun addBackgroundOpacityControl(parent: LinearLayout) {
-        val current = prefs.getInt("background_opacity", 100).coerceIn(0, 100)
+        val current = (((prefs.getInt("background_opacity", 100).coerceIn(0, 100) + 5) / 10) * 10)
         val valueLabel = TextView(this).apply {
             text = "Opacitate fundal: $current%"
             textSize = 14f
@@ -193,14 +199,15 @@ class SettingsActivity : Activity() {
             setPadding(0, dp(7), 0, 0)
         }
         val seekBar = SeekBar(this).apply {
-            max = 100
-            progress = current
+            max = 10
+            progress = current / 10
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
-                    valueLabel.text = "Opacitate fundal: $progress%"
+                    val opacity = progress * 10
+                    valueLabel.text = "Opacitate fundal: $opacity%"
                     if (fromUser) {
-                        prefs.edit().putInt("background_opacity", progress).apply()
-                        val alpha = progress / 100f
+                        prefs.edit().putInt("background_opacity", opacity).apply()
+                        val alpha = opacity / 100f
                         previewBackground?.alpha = alpha
                         previewOverlay?.alpha = alpha
                         WeatherWidgetProvider.updateBackgroundOpacity(this@SettingsActivity)
