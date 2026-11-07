@@ -243,8 +243,8 @@ class SettingsActivity : Activity() {
         }
         previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = prefs.getInt(profileKey("size_hourly"), 12).coerceIn(8, 16).toFloat() }
         previewViews.filterKeys { it.startsWith("size_daily") }.values.forEach { it.textSize = prefs.getInt(profileKey("size_daily"), 12).coerceIn(8, 16).toFloat() }
-        previewViews["label_hourly"]?.textSize = (prefs.getInt("size_hourly", 12).coerceIn(8, 16) + 1).toFloat()
-        previewViews["label_daily"]?.textSize = (prefs.getInt("size_daily", 12).coerceIn(8, 16) + 1).toFloat()
+        previewViews["label_hourly"]?.textSize = (prefs.getInt(profileKey("size_hourly"), 12).coerceIn(8, 16) + 1).toFloat()
+        previewViews["label_daily"]?.textSize = (prefs.getInt(profileKey("size_daily"), 12).coerceIn(8, 16) + 1).toFloat()
     }
 
     private fun addBackgroundOpacityControl(parent: LinearLayout) {
