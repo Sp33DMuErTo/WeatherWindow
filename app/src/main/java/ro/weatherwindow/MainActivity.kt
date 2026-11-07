@@ -22,7 +22,6 @@ import android.widget.TextView
 import android.graphics.Color
 import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
-import android.widget.HorizontalScrollView
 import android.text.Editable
 import android.text.TextWatcher
 import kotlin.concurrent.thread
@@ -299,42 +298,32 @@ class MainActivity : Activity() {
         }
         forecastContainer.addView(hourlyTitle)
         forecastContainer.addView(TextView(this).apply {
-            text = "Glisează pentru a vedea toate orele"
+            text = "Lista completă pentru următoarele 24 de ore"
             textSize = 12f
             setTextColor(Color.rgb(160, 184, 202))
             setPadding(0, dp(3), 0, dp(10))
         })
 
-        val cards = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
+        val hourlyList = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
         }
         w.hourlyForecast.forEachIndexed { index, hour ->
-            val card = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER
-                setPadding(dp(8), dp(12), dp(8), dp(12))
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                setPadding(dp(14), dp(10), dp(14), dp(10))
                 background = if (index == 0) roundedBackground(Color.rgb(48, 91, 119), Color.rgb(113, 185, 220))
                     else roundedBackground(Color.rgb(27, 48, 66), Color.rgb(49, 72, 91))
             }
-            card.addView(label(hour.time, 14f, if (index == 0) Color.WHITE else Color.rgb(190, 207, 220), true))
-            card.addView(label(WeatherRepository.symbol(hour.code), 30f, Color.WHITE).apply {
-                setPadding(0, dp(8), 0, dp(7))
-            })
-            card.addView(label("\${hour.temperature}°", 25f, Color.WHITE, true))
-            card.addView(label("💧 \${hour.precipitation}%", 13f, Color.rgb(133, 205, 242), true).apply {
-                setPadding(0, dp(8), 0, 0)
-            })
-            cards.addView(card, LinearLayout.LayoutParams(dp(104), dp(145)).apply {
-                marginEnd = dp(9)
+            row.addView(label(hour.time, 15f, Color.WHITE, true), LinearLayout.LayoutParams(dp(58), LinearLayout.LayoutParams.WRAP_CONTENT))
+            row.addView(label(WeatherRepository.symbol(hour.code), 27f, Color.WHITE), LinearLayout.LayoutParams(dp(52), LinearLayout.LayoutParams.WRAP_CONTENT))
+            row.addView(label("${hour.temperature}°", 21f, Color.WHITE, true), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+            row.addView(label("💧 ${hour.precipitation}%", 14f, Color.rgb(133, 205, 242), true))
+            hourlyList.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(58)).apply {
+                bottomMargin = dp(7)
             })
         }
-        val hourlyScroll = HorizontalScrollView(this).apply {
-            isHorizontalScrollBarEnabled = false
-            clipToPadding = false
-            addView(cards)
-        }
-        forecastContainer.addView(hourlyScroll, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(153)).apply {
+        forecastContainer.addView(hourlyList, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
             bottomMargin = dp(22)
         })
 
