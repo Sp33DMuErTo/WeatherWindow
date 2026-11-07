@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent" android:layout_height="match_parent"
+    android:orientation="vertical" android:padding="16dp"
+    android:background="#263746">
+    <TextView android:id="@+id/location" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="WeatherWindow • România" android:textColor="#FFFFFF" android:textSize="14sp"/>
+    <TextView android:id="@+id/temperature" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="--°" android:textColor="#FFFFFF" android:textSize="42sp" android:textStyle="bold"/>
+    <TextView android:id="@+id/condition" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Se pregătește prognoza…" android:textColor="#E5EDF3" android:textSize="14sp"/>
+    <TextView android:id="@+id/details" android:layout_width="wrap_content" android:layout_height="wrap_content"
+        android:text="Se simte: --°   Umiditate: --%" android:textColor="#E5EDF3" android:textSize="12sp"/>
+    <TextView android:id="@+id/hourly" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:layout_marginTop="12dp" android:text="Prognoză orară  •  În curând"
+        android:textColor="#FFFFFF" android:textSize="12sp"/>
+</LinearLayout>
