@@ -55,8 +55,8 @@ object WeatherRepository {
         for (i in 0 until times.length()) {
             if (times.optString(i) >= now) { start = i; break }
         }
-        val hourParts = (start until minOf(start + 6, times.length())).map { i ->
-            "${times.optString(i).takeLast(5)}  ${temps.optDouble(i).toInt()}°  ${rain.optInt(i)}%"
+        val hourParts = (start until minOf(start + 24, times.length())).map { i ->
+            "${times.optString(i).takeLast(5)} ${temps.optDouble(i).toInt()}° ${rain.optInt(i)}%"
         }
         val dayParts = (0 until minOf(7, daily.getJSONArray("time").length())).map { i ->
             "${daily.getJSONArray("time").optString(i).takeLast(5)}  ${daily.getJSONArray("temperature_2m_max").optDouble(i).toInt()}°/${daily.getJSONArray("temperature_2m_min").optDouble(i).toInt()}°"
@@ -69,7 +69,7 @@ object WeatherRepository {
             current.getInt("relative_humidity_2m"),
             current.getDouble("wind_speed_10m").toInt(),
             current.getInt("weather_code"),
-            hourParts.joinToString("   •   "),
+            hourParts.chunked(6).joinToString("\\n") { row -> row.joinToString("   •   ") },
             dayParts.joinToString("\n")
         )
     }
