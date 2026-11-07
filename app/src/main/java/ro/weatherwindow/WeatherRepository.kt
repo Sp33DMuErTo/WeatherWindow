@@ -69,7 +69,7 @@ object WeatherRepository {
             current.getInt("relative_humidity_2m"),
             current.getDouble("wind_speed_10m").toInt(),
             current.getInt("weather_code"),
-            hourParts.chunked(6).joinToString("\\n") { row -> row.joinToString("   •   ") },
+            hourParts.chunked(6).joinToString("\n") { row -> row.joinToString("   •   ") },
             dayParts.joinToString("\n")
         )
     }
