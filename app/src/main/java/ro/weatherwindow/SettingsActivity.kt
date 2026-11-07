@@ -6,6 +6,8 @@ import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
 import android.view.View
+import android.view.WindowInsets
+import android.os.Build
 import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.LinearLayout
@@ -59,11 +61,11 @@ class SettingsActivity : Activity() {
         preview.findViewById<TextView>(R.id.temperature).text = "18°"
         preview.findViewById<TextView>(R.id.condition).text = "🌤️  Parțial noros"
         preview.findViewById<TextView>(R.id.details).text = "Se simte 17°  •  Umiditate 62%  •  Vânt 12 km/h"
-        preview.findViewById<TextView>(R.id.hourly_label).text = "PROGNOZĂ ORARĂ · 24 H"
+        preview.findViewById<TextView>(R.id.hourly_label).text = "PROGNOZĂ ORARĂ · 6 H"
         preview.findViewById<TextView>(R.id.hourly_left).text =
-            "12:00 🌤️ 18°/0%\n13:00 ☀️ 19°/0%\n14:00 ☀️ 20°/0%\n15:00 🌤️ 20°/5%\n16:00 🌤️ 19°/5%\n17:00 ☁️ 18°/10%\n18:00 ☁️ 17°/15%\n19:00 🌧️ 16°/40%\n20:00 🌧️ 15°/55%\n21:00 🌧️ 14°/65%\n22:00 ☁️ 13°/20%\n23:00 ☁️ 12°/10%"
+            "12:00 🌤️ 18°/0%\\n13:00 ☀️ 19°/0%\\n14:00 ☀️ 20°/0%"
         preview.findViewById<TextView>(R.id.hourly_right).text =
-            "00:00 ☁️ 12°/10%\n01:00 ☁️ 11°/5%\n02:00 🌙 11°/0%\n03:00 🌙 10°/0%\n04:00 🌙 10°/0%\n05:00 🌤️ 10°/0%\n06:00 🌤️ 11°/0%\n07:00 ☀️ 12°/0%\n08:00 ☀️ 14°/0%\n09:00 🌤️ 16°/0%\n10:00 🌤️ 17°/0%\n11:00 ☀️ 18°/0%"
+            "15:00 🌤️ 20°/5%\\n16:00 🌤️ 19°/5%\\n17:00 ☁️ 18°/10%"
         preview.findViewById<TextView>(R.id.daily_label).text = "URMĂTOARELE 7 ZILE"
         preview.findViewById<TextView>(R.id.daily).text =
             "Azi ☀️ 18°/12°  ·  Lun 🌤️ 20°/13°\nMar ☁️ 19°/11°  ·  Mie 🌧️ 17°/10°\nJoi 🌦️ 18°/9°  ·  Vin ☀️ 21°/12°\nSâm 🌤️ 22°/13°"
@@ -125,6 +127,18 @@ class SettingsActivity : Activity() {
         }, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply { topMargin = dp(8) })
+        root.setOnApplyWindowInsetsListener { view, insets ->
+            if (Build.VERSION.SDK_INT >= 30) {
+                val safe = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+                view.setPadding(dp(18) + safe.left, dp(12) + safe.top,
+                    dp(18) + safe.right, dp(12) + safe.bottom)
+            } else {
+                @Suppress("DEPRECATION")
+                view.setPadding(dp(18) + insets.systemWindowInsetLeft, dp(12) + insets.systemWindowInsetTop,
+                    dp(18) + insets.systemWindowInsetRight, dp(12) + insets.systemWindowInsetBottom)
+            }
+            insets
+        }
         setContentView(root)
         applyPreviewSizes()
     }
