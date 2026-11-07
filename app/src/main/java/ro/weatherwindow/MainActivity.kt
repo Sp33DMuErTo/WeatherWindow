@@ -141,8 +141,9 @@ class MainActivity : Activity() {
         status.text = "Încarc prognoza pentru poziția ta…"
         thread {
             try {
-                val snapshot = WeatherRepository.load(this, lat, lon, label)
-                prefs.edit().putString("city", label).putFloat("lat", lat.toFloat())
+                val cityName = WeatherRepository.reverseGeocode(this, lat, lon) ?: label
+                val snapshot = WeatherRepository.load(this, lat, lon, cityName)
+                prefs.edit().putString("city", cityName).putFloat("lat", lat.toFloat())
                     .putFloat("lon", lon.toFloat()).apply()
                 runOnUiThread { showWeather(snapshot) }
             } catch (e: Exception) {
