@@ -57,7 +57,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.details, "Se simte ${weather.feelsLike}°  •  Umiditate ${weather.humidity}%  •  Vânt ${weather.wind} km/h")
                 val hourlyIds = intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6)
                 hourlyIds.forEachIndexed { index, id ->
-                    views.setTextViewText(id, weather.hourlyColumns.getOrElse(index) { "--:--\\n—\\n--°\\n--%" })
+                    views.setTextViewText(id, weather.hourlyColumns.getOrElse(index) { "--:--\n—\n--°\n--%" })
                 }
                 views.setTextViewText(R.id.daily, weather.daily)
                 applyTextSizes(context, views)
@@ -109,7 +109,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.condition, "Deschide aplicația și alege orașul sau GPS")
                 views.setTextViewText(R.id.details, "Prognoză meteo Open-Meteo")
                 intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6).forEach { id ->
-                    views.setTextViewText(id, "--:--\\n—\\n--°\\n--%")
+                    views.setTextViewText(id, "--:--\n—\n--°\n--%")
                 }
                 views.setTextViewText(R.id.daily, "Prognoza pe 7 zile va apărea aici")
                 applyTextSizes(context, views)
