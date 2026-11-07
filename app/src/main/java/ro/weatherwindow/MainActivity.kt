@@ -93,7 +93,6 @@ class MainActivity : Activity() {
                                 }
                             }
                         } catch (_: Exception) {
-                            // Sugestiile pot lipsi temporar dacă nu există conexiune.
                         }
                     }
                 }
@@ -228,7 +227,7 @@ class MainActivity : Activity() {
     }
 
     private fun showWeather(w: WeatherSnapshot) {
-        status.text = "${w.city}\n${w.temperature}°  •  ${WeatherRepository.symbol(w.code)}  ${WeatherRepository.condition(w.code)}\nSe simte ca ${w.feelsLike}°  |  Umiditate ${w.humidity}%  |  Vânt ${w.wind} km/h\n\nUrmătoarele ore\n${w.hourly}\n\nUrmătoarele 7 zile\n${w.daily}\n\nWidgetul de pe ecranul principal a fost actualizat."
+        status.text = "${w.city}\n${w.temperature}°  •  ${WeatherRepository.symbol(w.code)}  ${WeatherRepository.condition(w.code)}\nSe simte ca ${w.feelsLike}°  |  Umiditate ${w.humidity}%  |  Vânt ${w.wind} km/h\n\nUrmătoarele ore\n${w.hourlyLeft}\n${w.hourlyRight}\n\nUrmătoarele 7 zile\n${w.daily}\n\nWidgetul de pe ecranul principal a fost actualizat."
         WeatherWidgetProvider.updateAll(this, w)
     }
 }
