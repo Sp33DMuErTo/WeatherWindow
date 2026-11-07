@@ -133,7 +133,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="top"
-            android:layout_marginTop="1dp">
+            android:layout_marginTop="2dp">
             <TextView
                 android:id="@+id/hourly_1"
                 android:layout_width="0dp"
@@ -143,7 +143,7 @@
                 android:text="--:--\n🌤️\n--°\n--%"
                 android:textColor="#F0F5F8"
                 android:textSize="8sp"
-                android:lineSpacingExtra="1dp"
+                android:lineSpacingExtra="2dp"
                 android:includeFontPadding="false" />
             <TextView
                 android:id="@+id/hourly_2"
@@ -154,7 +154,7 @@
                 android:text="--:--\n🌤️\n--°\n--%"
                 android:textColor="#F0F5F8"
                 android:textSize="8sp"
-                android:lineSpacingExtra="1dp"
+                android:lineSpacingExtra="2dp"
                 android:includeFontPadding="false" />
             <TextView
                 android:id="@+id/hourly_3"
@@ -165,7 +165,7 @@
                 android:text="--:--\n🌤️\n--°\n--%"
                 android:textColor="#F0F5F8"
                 android:textSize="8sp"
-                android:lineSpacingExtra="1dp"
+                android:lineSpacingExtra="2dp"
                 android:includeFontPadding="false" />
             <TextView
                 android:id="@+id/hourly_4"
@@ -176,7 +176,7 @@
                 android:text="--:--\n🌤️\n--°\n--%"
                 android:textColor="#F0F5F8"
                 android:textSize="8sp"
-                android:lineSpacingExtra="1dp"
+                android:lineSpacingExtra="2dp"
                 android:includeFontPadding="false" />
             <TextView
                 android:id="@+id/hourly_5"
@@ -187,7 +187,7 @@
                 android:text="--:--\n🌤️\n--°\n--%"
                 android:textColor="#F0F5F8"
                 android:textSize="8sp"
-                android:lineSpacingExtra="1dp"
+                android:lineSpacingExtra="2dp"
                 android:includeFontPadding="false" />
             <TextView
                 android:id="@+id/hourly_6"
@@ -198,10 +198,14 @@
                 android:text="--:--\n🌤️\n--°\n--%"
                 android:textColor="#F0F5F8"
                 android:textSize="8sp"
-                android:lineSpacingExtra="1dp"
+                android:lineSpacingExtra="2dp"
                 android:includeFontPadding="false" />
         </LinearLayout>
 
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
         <TextView
             android:layout_width="match_parent"
             android:layout_height="1dp"
@@ -232,7 +236,7 @@
                 android:text="--\n--°/--°\n🌤️\n--%"
                 android:textColor="#F0F5F8"
                 android:textSize="8sp"
-                android:lineSpacingExtra="1dp"
+                android:lineSpacingExtra="2dp"
                 android:includeFontPadding="false" />
             <TextView
                 android:id="@+id/daily_2"
@@ -243,7 +247,7 @@
                 android:text="--\n--°/--°\n🌤️\n--%"
                 android:textColor="#F0F5F8"
                 android:textSize="8sp"
-                android:lineSpacingExtra="1dp"
+                android:lineSpacingExtra="2dp"
                 android:includeFontPadding="false" />
             <TextView
                 android:id="@+id/daily_3"
@@ -254,7 +258,7 @@
                 android:text="--\n--°/--°\n🌤️\n--%"
                 android:textColor="#F0F5F8"
                 android:textSize="8sp"
-                android:lineSpacingExtra="1dp"
+                android:lineSpacingExtra="2dp"
                 android:includeFontPadding="false" />
             <TextView
                 android:id="@+id/daily_4"
@@ -265,7 +269,7 @@
                 android:text="--\n--°/--°\n🌤️\n--%"
                 android:textColor="#F0F5F8"
                 android:textSize="8sp"
-                android:lineSpacingExtra="1dp"
+                android:lineSpacingExtra="2dp"
                 android:includeFontPadding="false" />
             <TextView
                 android:id="@+id/daily_5"
@@ -276,7 +280,7 @@
                 android:text="--\n--°/--°\n🌤️\n--%"
                 android:textColor="#F0F5F8"
                 android:textSize="8sp"
-                android:lineSpacingExtra="1dp"
+                android:lineSpacingExtra="2dp"
                 android:includeFontPadding="false" />
             <TextView
                 android:id="@+id/daily_6"
@@ -287,7 +291,7 @@
                 android:text="--\n--°/--°\n🌤️\n--%"
                 android:textColor="#F0F5F8"
                 android:textSize="8sp"
-                android:lineSpacingExtra="1dp"
+                android:lineSpacingExtra="2dp"
                 android:includeFontPadding="false" />
         </LinearLayout>
     </LinearLayout>
