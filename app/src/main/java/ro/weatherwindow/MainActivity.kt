@@ -11,10 +11,13 @@ import android.location.LocationManager
 import android.os.Bundle
 import android.os.Looper
 import android.view.Gravity
+import android.view.WindowInsets
+import android.os.Build
 import android.widget.Button
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import android.graphics.Color
 import android.graphics.Typeface
@@ -139,7 +142,23 @@ class MainActivity : Activity() {
             bottomMargin = 12
         })
 
-        setContentView(root)
+        val page = ScrollView(this).apply {
+            isFillViewport = false
+            clipToPadding = false
+            addView(root)
+        }
+        page.setOnApplyWindowInsetsListener { view, insets ->
+            if (Build.VERSION.SDK_INT >= 30) {
+                val safe = insets.getInsets(WindowInsets.Type.systemBars() or WindowInsets.Type.displayCutout())
+                view.setPadding(safe.left, safe.top, safe.right, safe.bottom)
+            } else {
+                @Suppress("DEPRECATION")
+                view.setPadding(insets.systemWindowInsetLeft, insets.systemWindowInsetTop,
+                    insets.systemWindowInsetRight, insets.systemWindowInsetBottom)
+            }
+            insets
+        }
+        setContentView(page)
         if (prefs.contains("lat")) refreshSaved()
     }
 
