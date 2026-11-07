@@ -83,7 +83,11 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 val views = RemoteViews(context.packageName, widgetLayout(options))
                 views.setTextViewText(R.id.location, weather.city)
                 views.setTextViewText(R.id.temperature, "${weather.temperature}°")
-                views.setTextViewText(R.id.condition, "${WeatherRepository.symbol(weather.code)}  ${WeatherRepository.condition(weather.code)}")
+                views.setTextViewText(R.id.condition, WeatherRepository.condition(weather.code))
+                val gpsSelected = context.getSharedPreferences("weather", Context.MODE_PRIVATE).getBoolean("is_gps", false)
+                views.setViewVisibility(R.id.gps_indicator, if (gpsSelected) android.view.View.VISIBLE else android.view.View.GONE)
+                views.setImageViewBitmap(R.id.weather_animation, WeatherAnimationFrames.render(weather.code, 0))
+                context.getSharedPreferences("weather", Context.MODE_PRIVATE).edit().putInt("weather_code", weather.code).apply()
                 views.setTextViewText(R.id.details, "Se simte ${weather.feelsLike}°  •  Umiditate ${weather.humidity}%  •  Vânt ${weather.wind} km/h")
                 val hourlyIds = intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6)
                 hourlyIds.forEachIndexed { index, id ->
@@ -120,6 +124,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             val contentPadding = if (compact) 5 else 11
             views.setViewPadding(R.id.widget_content, contentPadding, contentPadding, contentPadding, contentPadding)
             views.setTextViewTextSize(R.id.location, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_location", prefs.getInt("size_location_5x4", 22)) * fontScale)
+            views.setTextViewTextSize(R.id.gps_indicator, TypedValue.COMPLEX_UNIT_SP, 16f * fontScale)
             views.setTextViewTextSize(R.id.temperature, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_temperature", prefs.getInt("size_temperature_5x4", 53)) * fontScale)
             views.setTextViewTextSize(R.id.condition, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_condition", prefs.getInt("size_condition_5x4", 18)) * fontScale)
             views.setTextViewTextSize(R.id.details, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_details", prefs.getInt("size_details_5x4", 16)) * fontScale)
@@ -156,8 +161,10 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 val options = AppWidgetManager.getInstance(context).getAppWidgetOptions(id)
                 val views = RemoteViews(context.packageName, widgetLayout(options))
                 views.setTextViewText(R.id.location, "WeatherWindow")
+                views.setViewVisibility(R.id.gps_indicator, android.view.View.GONE)
                 views.setTextViewText(R.id.temperature, "--°")
-                views.setTextViewText(R.id.condition, "Deschide aplicația și alege orașul sau GPS")
+                views.setTextViewText(R.id.condition, "Așteaptă prognoza meteo")
+                views.setImageViewBitmap(R.id.weather_animation, WeatherAnimationFrames.render(3, 0))
                 views.setTextViewText(R.id.details, "Prognoză meteo Open-Meteo")
                 intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6).forEach { id ->
                     views.setTextViewText(id, "--:--\n—\n--°\n--%")
