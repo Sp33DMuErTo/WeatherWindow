@@ -21,9 +21,12 @@ data class WeatherSnapshot(
     val hourlyRight: String,
     val hourlyColumns: List<String>,
     val hourlyFull: String,
+    val hourlyForecast: List<HourlyForecast>,
     val dailyColumns: List<String>,
     val daily: String
 )
+
+data class HourlyForecast(val time: String, val temperature: Int, val precipitation: Int, val code: Int)
 
 data class CitySuggestion(
     val name: String,
@@ -107,6 +110,9 @@ object WeatherRepository {
         val hourParts = (start until minOf(start + 24, times.length())).map { i ->
             "${times.optString(i).takeLast(5)} ${symbol(hourlyCodes.optInt(i))} ${temps.optDouble(i).toInt()}°/${rain.optInt(i)}%"
         }
+        val hourlyForecast = (start until minOf(start + 24, times.length())).map { i ->
+            HourlyForecast(times.optString(i).takeLast(5), temps.optDouble(i).toInt(), rain.optInt(i), hourlyCodes.optInt(i))
+        }
         val hourlyColumns = (start until minOf(start + 6, times.length())).map { i ->
             "${times.optString(i).takeLast(5)}\n${temps.optDouble(i).toInt()}°\n${symbol(hourlyCodes.optInt(i))}\n${rain.optInt(i)}%"
         }
@@ -125,6 +131,7 @@ object WeatherRepository {
             hourParts.drop(3).take(3).joinToString("\n"),
             hourlyColumns,
             hourParts.joinToString("\n"),
+            hourlyForecast,
             dayParts,
             dayParts.joinToString("\n")
         )
