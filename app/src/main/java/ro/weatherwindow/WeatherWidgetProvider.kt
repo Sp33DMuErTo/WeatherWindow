@@ -9,6 +9,7 @@ import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
+import android.util.TypedValue
 import android.widget.RemoteViews
 
 class WeatherWidgetProvider : AppWidgetProvider() {
@@ -54,7 +55,8 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.temperature, "${weather.temperature}°")
                 views.setTextViewText(R.id.condition, "${WeatherRepository.symbol(weather.code)}  ${WeatherRepository.condition(weather.code)}")
                 views.setTextViewText(R.id.details, "Se simte ${weather.feelsLike}°  •  Umiditate ${weather.humidity}%  •  Vânt ${weather.wind} km/h")
-                views.setTextViewText(R.id.hourly, weather.hourly)
+                views.setTextViewText(R.id.hourly_left, weather.hourlyLeft)
+                views.setTextViewText(R.id.hourly_right, weather.hourlyRight)
                 views.setTextViewText(R.id.daily, weather.daily)
                 applyTextSizes(context, views)
                 weatherBackground(context, weather.code)?.let {
@@ -68,40 +70,32 @@ class WeatherWidgetProvider : AppWidgetProvider() {
 
         private fun applyTextSizes(context: Context, views: RemoteViews) {
             val prefs = context.getSharedPreferences("weather", Context.MODE_PRIVATE)
-            views.setTextViewTextSize(R.id.location, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_location", 22).toFloat())
-            views.setTextViewTextSize(R.id.temperature, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_temperature", 53).toFloat())
-            views.setTextViewTextSize(R.id.condition, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_condition", 18).toFloat())
-            views.setTextViewTextSize(R.id.details, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_details", 16).toFloat())
-            views.setTextViewTextSize(R.id.hourly, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_hourly", 14).toFloat())
-            views.setTextViewTextSize(R.id.hourly_label, android.util.TypedValue.COMPLEX_UNIT_SP, (prefs.getInt("size_hourly", 8) + 1).toFloat())
-            views.setTextViewTextSize(R.id.daily, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_daily", 11).toFloat())
-            views.setTextViewTextSize(R.id.daily_label, android.util.TypedValue.COMPLEX_UNIT_SP, (prefs.getInt("size_daily", 8) + 1).toFloat())
+            views.setTextViewTextSize(R.id.location, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_location", 22).toFloat())
+            views.setTextViewTextSize(R.id.temperature, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_temperature", 53).toFloat())
+            views.setTextViewTextSize(R.id.condition, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_condition", 18).toFloat())
+            views.setTextViewTextSize(R.id.details, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_details", 16).toFloat())
+            val hourlySize = prefs.getInt("size_hourly", 14).toFloat()
+            views.setTextViewTextSize(R.id.hourly_left, TypedValue.COMPLEX_UNIT_SP, hourlySize)
+            views.setTextViewTextSize(R.id.hourly_right, TypedValue.COMPLEX_UNIT_SP, hourlySize)
+            views.setTextViewTextSize(R.id.hourly_label, TypedValue.COMPLEX_UNIT_SP, hourlySize + 1)
+            views.setTextViewTextSize(R.id.daily, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_daily", 11).toFloat())
+            views.setTextViewTextSize(R.id.daily_label, TypedValue.COMPLEX_UNIT_SP, (prefs.getInt("size_daily", 11) + 1).toFloat())
         }
 
         private fun weatherBackground(context: Context, code: Int): Bitmap? {
             val index = WeatherRepository.backgroundIndex(code)
-            synchronized(backgroundCache) {
-                backgroundCache[index]?.let { return it }
-            }
+            synchronized(backgroundCache) { backgroundCache[index]?.let { return it } }
             return try {
                 val encoded = context.assets.open("weather_sprites.webp.b64").bufferedReader().use { it.readText() }
                 val bytes = Base64.decode(encoded, Base64.DEFAULT)
                 val sprite = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null
                 val cellWidth = sprite.width / 3
                 val cellHeight = sprite.height / 2
-                val bitmap = Bitmap.createBitmap(
-                    sprite,
-                    (index % 3) * cellWidth,
-                    (index / 3) * cellHeight,
-                    cellWidth,
-                    cellHeight
-                )
+                val bitmap = Bitmap.createBitmap(sprite, (index % 3) * cellWidth, (index / 3) * cellHeight, cellWidth, cellHeight)
                 sprite.recycle()
                 synchronized(backgroundCache) { backgroundCache[index] = bitmap }
                 bitmap
-            } catch (_: Exception) {
-                null
-            }
+            } catch (_: Exception) { null }
         }
 
         private fun updatePlaceholders(context: Context, ids: IntArray) {
@@ -111,12 +105,11 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.temperature, "--°")
                 views.setTextViewText(R.id.condition, "Deschide aplicația și alege orașul sau GPS")
                 views.setTextViewText(R.id.details, "Prognoză meteo Open-Meteo")
-                views.setTextViewText(R.id.hourly, "Prognoza orară va apărea aici")
+                views.setTextViewText(R.id.hourly_left, "Prognoza orară\nva apărea aici")
+                views.setTextViewText(R.id.hourly_right, "")
                 views.setTextViewText(R.id.daily, "Prognoza pe 7 zile va apărea aici")
                 applyTextSizes(context, views)
-                weatherBackground(context, 3)?.let {
-                    views.setImageViewBitmap(R.id.weather_background, it)
-                }
+                weatherBackground(context, 3)?.let { views.setImageViewBitmap(R.id.weather_background, it) }
                 val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                 views.setOnClickPendingIntent(R.id.widget_root, open)
                 AppWidgetManager.getInstance(context).updateAppWidget(id, views)
