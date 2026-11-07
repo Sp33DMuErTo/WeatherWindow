@@ -146,7 +146,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 R.id.daily_6 to Color.rgb(240, 245, 248)
             )
             defaults.forEach { (id, defaultColor) ->
-                views.setTextColor(id, if (enabled) selected else defaultColor)
+                views.setInt(id, "setTextColor", if (enabled) selected else defaultColor)
             }
         }
 
