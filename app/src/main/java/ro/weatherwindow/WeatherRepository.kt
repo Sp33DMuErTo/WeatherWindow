@@ -24,7 +24,9 @@ data class WeatherSnapshot(
     val hourlyFull: String,
     val hourlyForecast: List<HourlyForecast>,
     val dailyColumns: List<String>,
-    val daily: String
+    val daily: String,
+    val sunrise: String = "06:00",
+    val timezone: String = "Europe/Bucharest"
 )
 
 data class HourlyForecast(
@@ -112,7 +114,9 @@ object WeatherRepository {
         val current = root.getJSONObject("current")
         val hourly = root.getJSONObject("hourly")
         val daily = root.getJSONObject("daily")
+        val sunrise = daily.getJSONArray("sunrise").optString(0).takeLast(5)
         val sunset = daily.getJSONArray("sunset").optString(0).takeLast(5)
+        val timezone = root.optString("timezone", "Europe/Bucharest")
         val times = hourly.getJSONArray("time")
         val temps = hourly.getJSONArray("temperature_2m")
         val rain = hourly.getJSONArray("precipitation_probability")
@@ -162,7 +166,9 @@ object WeatherRepository {
             hourParts.joinToString("\n"),
             hourlyForecast,
             dayParts,
-            dayParts.joinToString("\n")
+            dayParts.joinToString("\n"),
+            sunrise,
+            timezone
         )
     }
 
