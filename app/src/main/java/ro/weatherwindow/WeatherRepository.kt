@@ -93,6 +93,16 @@ object WeatherRepository {
         )
     }
 
+    fun backgroundIndex(code: Int): Int = when {
+        code == 0 -> 0
+        code == 1 || code == 2 -> 1
+        code == 3 || code == 45 || code == 48 -> 2
+        code in 51..67 || code in 80..82 -> 3
+        code in 71..77 || code in 85..86 -> 4
+        code in 95..99 -> 5
+        else -> 2
+    }
+
     fun symbol(code: Int): String = when (code) {
         0 -> "☀️"
         1, 2 -> "🌤️"
