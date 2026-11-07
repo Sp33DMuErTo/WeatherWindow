@@ -327,19 +327,79 @@ class MainActivity : Activity() {
         val hourlyList = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
         }
+        var expandedDetails: LinearLayout? = null
         w.hourlyForecast.forEachIndexed { index, hour ->
+            val card = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                background = if (index == 0) roundedBackground(Color.rgb(48, 91, 119), Color.rgb(113, 185, 220))
+                    else roundedBackground(Color.rgb(27, 48, 66), Color.rgb(49, 72, 91))
+            }
             val row = LinearLayout(this).apply {
                 orientation = LinearLayout.HORIZONTAL
                 gravity = Gravity.CENTER_VERTICAL
                 setPadding(dp(14), dp(10), dp(14), dp(10))
-                background = if (index == 0) roundedBackground(Color.rgb(48, 91, 119), Color.rgb(113, 185, 220))
-                    else roundedBackground(Color.rgb(27, 48, 66), Color.rgb(49, 72, 91))
+                isClickable = true
+                isFocusable = true
+                contentDescription = "Detalii prognoză pentru ${hour.time}"
             }
             row.addView(label(hour.time, 15f, Color.WHITE, true), LinearLayout.LayoutParams(dp(58), LinearLayout.LayoutParams.WRAP_CONTENT))
             row.addView(label(WeatherRepository.symbol(hour.code), 27f, Color.WHITE), LinearLayout.LayoutParams(dp(52), LinearLayout.LayoutParams.WRAP_CONTENT))
             row.addView(label("${hour.temperature}°", 21f, Color.WHITE, true), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
             row.addView(label("💧 ${hour.precipitation}%", 14f, Color.rgb(133, 205, 242), true))
-            hourlyList.addView(row, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, dp(58)).apply {
+            val details = LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                visibility = View.GONE
+                setPadding(dp(14), 0, dp(14), dp(12))
+                background = roundedBackground(Color.rgb(23, 42, 58))
+            }
+            details.addView(TextView(this).apply {
+                text = "DETALII PENTRU ORA ${hour.time}"
+                textSize = 10f
+                setTextColor(Color.rgb(151, 190, 215))
+                typeface = Typeface.DEFAULT_BOLD
+                setPadding(0, dp(8), 0, dp(4))
+            })
+            val metrics = listOf(
+                "🌡️ Resimțită" to "${hour.feelsLike}°",
+                "💨 Vânt" to "${hour.wind} km/h ${WeatherRepository.windDirection(hour.windDirection)}",
+                "🌬️ Rafale" to "${hour.windGusts} km/h",
+                "💧 Umiditate" to "${hour.humidity}%",
+                "☁️ Nebulozitate" to "${hour.cloudCover}%",
+                "🌧️ Precipitații" to String.format(java.util.Locale("ro", "RO"), "%.1f mm", hour.precipitationMm),
+                "☀️ Indice UV" to String.format(java.util.Locale("ro", "RO"), "%.1f", hour.uvIndex)
+            )
+            metrics.chunked(2).forEach { pair ->
+                val metricRow = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                }
+                pair.forEach { (name, value) ->
+                    metricRow.addView(TextView(this).apply {
+                        text = "$name\n$value"
+                        textSize = 12f
+                        setTextColor(Color.rgb(221, 234, 243))
+                        gravity = Gravity.START
+                        setPadding(dp(3), dp(5), dp(3), dp(5))
+                    }, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                }
+                if (pair.size == 1) {
+                    metricRow.addView(TextView(this), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
+                }
+                details.addView(metricRow)
+            }
+            row.setOnClickListener {
+                if (details.visibility == View.VISIBLE) {
+                    details.visibility = View.GONE
+                    expandedDetails = null
+                } else {
+                    expandedDetails?.visibility = View.GONE
+                    details.visibility = View.VISIBLE
+                    expandedDetails = details
+                }
+            }
+            card.addView(row)
+            card.addView(details)
+            hourlyList.addView(card, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
                 bottomMargin = dp(7)
             })
         }
@@ -348,7 +408,7 @@ class MainActivity : Activity() {
         })
 
         forecastContainer.addView(TextView(this).apply {
-            text = "Temperatura resimțită, umiditatea și vântul sunt măsurate pentru condițiile actuale."
+            text = "Atinge orice oră din listă pentru a vedea detaliile prognozei."
             textSize = 12f
             setTextColor(Color.rgb(160, 184, 202))
         })
