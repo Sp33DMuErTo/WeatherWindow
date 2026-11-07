@@ -37,6 +37,7 @@
                 android:layout_width="0dp"
                 android:layout_height="match_parent"
                 android:layout_weight="1"
+                android:layout_marginStart="8dp"
                 android:orientation="vertical"
                 android:gravity="center_vertical">
                 <LinearLayout
@@ -48,9 +49,11 @@
                         android:id="@+id/gps_indicator"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="⌖"
+                        android:text="📍"
                         android:textColor="#8EDBFF"
-                        android:textSize="16sp"
+                        android:textSize="14sp"
+                        android:includeFontPadding="false"
+                        android:layout_marginEnd="3dp"
                         android:visibility="gone"
                         android:contentDescription="Locație GPS" />
                     <TextView
