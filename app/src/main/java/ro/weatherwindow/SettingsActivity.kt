@@ -307,6 +307,21 @@ class SettingsActivity : Activity() {
             gravity = android.view.Gravity.CENTER_VERTICAL
             setPadding(dp(8), dp(8), dp(8), dp(8))
         }
+        val sample = TextView(this).apply {
+            text = "Aa"
+            textSize = 34f
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = android.view.Gravity.CENTER
+            setTextColor(existing)
+            setPadding(dp(8), dp(12), dp(8), dp(12))
+        }
+        val hexLabel = TextView(this).apply {
+            text = String.format("#%06X", 0xFFFFFF and existing)
+            textSize = 11f
+            setTextColor(Color.WHITE)
+            gravity = android.view.Gravity.CENTER
+            setPadding(0, dp(5), 0, 0)
+        }
         val wheel = ColorWheelView(this, existing) { color ->
             chosenColor = color
             sample.setTextColor(color)
@@ -322,21 +337,6 @@ class SettingsActivity : Activity() {
             text = "👁"
             textSize = 30f
             gravity = android.view.Gravity.CENTER
-        }
-        val sample = TextView(this).apply {
-            text = "Aa"
-            textSize = 34f
-            typeface = Typeface.DEFAULT_BOLD
-            gravity = android.view.Gravity.CENTER
-            setTextColor(existing)
-            setPadding(dp(8), dp(12), dp(8), dp(12))
-        }
-        val hexLabel = TextView(this).apply {
-            text = String.format("#%06X", 0xFFFFFF and existing)
-            textSize = 11f
-            setTextColor(Color.WHITE)
-            gravity = android.view.Gravity.CENTER
-            setPadding(0, dp(5), 0, 0)
         }
         previewColumn.addView(eye)
         previewColumn.addView(sample)
