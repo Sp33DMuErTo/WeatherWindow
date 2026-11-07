@@ -35,6 +35,17 @@ class WeatherWidgetProvider : AppWidgetProvider() {
     companion object {
         private val backgroundCache = mutableMapOf<Int, Bitmap>()
 
+        fun updateTextSizes(context: Context) {
+            val prefs = context.getSharedPreferences("weather", Context.MODE_PRIVATE)
+            val manager = AppWidgetManager.getInstance(context)
+            val ids = manager.getAppWidgetIds(ComponentName(context, WeatherWidgetProvider::class.java))
+            ids.forEach { id ->
+                val views = RemoteViews(context.packageName, R.layout.weather_widget)
+                applyTextSizes(context, views)
+                manager.updateAppWidget(id, views)
+            }
+        }
+
         fun updateAll(context: Context, weather: WeatherSnapshot) {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, WeatherWidgetProvider::class.java))
@@ -46,6 +57,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.details, "Se simte ${weather.feelsLike}°  •  Umiditate ${weather.humidity}%  •  Vânt ${weather.wind} km/h")
                 views.setTextViewText(R.id.hourly, weather.hourly)
                 views.setTextViewText(R.id.daily, weather.daily)
+                applyTextSizes(context, views)
                 weatherBackground(context, weather.code)?.let {
                     views.setImageViewBitmap(R.id.weather_background, it)
                 }
@@ -53,6 +65,18 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setOnClickPendingIntent(R.id.widget_root, open)
                 manager.updateAppWidget(id, views)
             }
+        }
+
+        private fun applyTextSizes(context: Context, views: RemoteViews) {
+            val prefs = context.getSharedPreferences("weather", Context.MODE_PRIVATE)
+            views.setTextViewTextSize(R.id.location, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_location", 14).toFloat())
+            views.setTextViewTextSize(R.id.temperature, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_temperature", 34).toFloat())
+            views.setTextViewTextSize(R.id.condition, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_condition", 12).toFloat())
+            views.setTextViewTextSize(R.id.details, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_details", 9).toFloat())
+            views.setTextViewTextSize(R.id.hourly, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_hourly", 8).toFloat())
+            views.setTextViewTextSize(R.id.hourly_label, android.util.TypedValue.COMPLEX_UNIT_SP, (prefs.getInt("size_hourly", 8) + 1).toFloat())
+            views.setTextViewTextSize(R.id.daily, android.util.TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_daily", 8).toFloat())
+            views.setTextViewTextSize(R.id.daily_label, android.util.TypedValue.COMPLEX_UNIT_SP, (prefs.getInt("size_daily", 8) + 1).toFloat())
         }
 
         private fun weatherBackground(context: Context, code: Int): Bitmap? {
@@ -90,6 +114,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.details, "Prognoză meteo Open-Meteo")
                 views.setTextViewText(R.id.hourly, "Prognoza orară va apărea aici")
                 views.setTextViewText(R.id.daily, "Prognoza pe 7 zile va apărea aici")
+                applyTextSizes(context, views)
                 weatherBackground(context, 3)?.let {
                     views.setImageViewBitmap(R.id.weather_background, it)
                 }
