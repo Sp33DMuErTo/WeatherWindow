@@ -17,7 +17,8 @@ data class WeatherSnapshot(
     val humidity: Int,
     val wind: Int,
     val code: Int,
-    val hourly: String,
+    val hourlyLeft: String,
+    val hourlyRight: String,
     val daily: String
 )
 
@@ -39,8 +40,6 @@ object WeatherRepository {
             } catch (_: Exception) { null }
         } else null
         if (!androidName.isNullOrBlank()) return androidName
-
-        // Fallback dacă serviciul Android nu întoarce numele localității.
         return try {
             val root = getJson("https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=$lat&lon=$lon&zoom=10&addressdetails=1")
             val address = root.optJSONObject("address") ?: return null
@@ -116,7 +115,8 @@ object WeatherRepository {
             current.getInt("relative_humidity_2m"),
             current.getDouble("wind_speed_10m").toInt(),
             current.getInt("weather_code"),
-            hourParts.chunked(6).joinToString("\n") { row -> row.joinToString("  ·  ") },
+            hourParts.take(12).joinToString("\n"),
+            hourParts.drop(12).joinToString("\n"),
             dayParts.chunked(2).joinToString("\n") { row -> row.joinToString("  ·  ") }
         )
     }
