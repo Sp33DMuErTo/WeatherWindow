@@ -99,7 +99,12 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 val gpsSelected = context.getSharedPreferences("weather", Context.MODE_PRIVATE).getBoolean("is_gps", false)
                 views.setViewVisibility(R.id.gps_indicator, if (gpsSelected) android.view.View.VISIBLE else android.view.View.GONE)
                 views.setImageViewBitmap(R.id.weather_animation, WeatherAnimationFrames.render(weather.code, 0))
-                context.getSharedPreferences("weather", Context.MODE_PRIVATE).edit().putInt("weather_code", weather.code).apply()
+                context.getSharedPreferences("weather", Context.MODE_PRIVATE).edit()
+                    .putInt("weather_code", weather.code)
+                    .putString("sunrise", weather.sunrise)
+                    .putString("sunset", weather.sunset)
+                    .putString("timezone", weather.timezone)
+                    .apply()
                 views.setTextViewText(R.id.details, "Se simte ${weather.feelsLike}°  •  Vânt ${weather.wind} km/h  •  Apus ${weather.sunset}")
                 val hourlyIds = intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6)
                 hourlyIds.forEachIndexed { index, id ->
@@ -111,7 +116,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 }
                 applyTextSizes(context, views, options)
                 applyTextColor(context, views)
-                weatherBackground(context, weather.code)?.let {
+                weatherBackground(context, weather.code, 0, weather.sunrise, weather.sunset, weather.timezone)?.let {
                     views.setImageViewBitmap(R.id.weather_background, it)
                 }
                 applyBackgroundOpacity(context, views)
@@ -182,21 +187,16 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             views.setTextViewTextSize(R.id.daily_label, TypedValue.COMPLEX_UNIT_SP, dailySize + fontScale)
         }
 
-        private fun weatherBackground(context: Context, code: Int): Bitmap? {
-            val index = WeatherRepository.backgroundIndex(code)
-            synchronized(backgroundCache) { backgroundCache[index]?.let { return it } }
-            return try {
-                val encoded = context.assets.open("weather_sprites.webp.b64").bufferedReader().use { it.readText() }
-                val bytes = Base64.decode(encoded, Base64.DEFAULT)
-                val sprite = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null
-                val cellWidth = sprite.width / 3
-                val cellHeight = sprite.height / 2
-                val bitmap = Bitmap.createBitmap(sprite, (index % 3) * cellWidth, (index / 3) * cellHeight, cellWidth, cellHeight)
-                sprite.recycle()
-                synchronized(backgroundCache) { backgroundCache[index] = bitmap }
-                bitmap
-            } catch (_: Exception) { null }
-        }
+        private fun weatherBackground(
+            context: Context,
+            code: Int,
+            frame: Int = 0,
+            sunrise: String = "06:00",
+            sunset: String = "18:00",
+            timezone: String = "Europe/Bucharest"
+        ): Bitmap? = try {
+            SceneBackground.render(code, frame, sunrise, sunset, timezone)
+        } catch (_: Exception) { null }
 
         private fun updatePlaceholders(context: Context, ids: IntArray) {
             ids.forEach { id ->
