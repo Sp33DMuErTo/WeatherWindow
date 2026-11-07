@@ -104,7 +104,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,
                 options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 280)
             ) ?: 280
-            val scale = (availableHeight / 280f).coerceIn(0.72f, 1f)
+            val scale = (availableHeight / 280f).coerceIn(0.55f, 1f)
             val contentPadding = (11 * scale).toInt()
             views.setViewPadding(R.id.widget_content, contentPadding, contentPadding, contentPadding, contentPadding)
             fun scaled(value: Int) = (value * scale).coerceAtLeast(7f)
