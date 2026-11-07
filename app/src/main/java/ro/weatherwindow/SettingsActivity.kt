@@ -63,8 +63,8 @@ class SettingsActivity : Activity() {
         preview.findViewById<TextView>(R.id.details).text = "Se simte 17°  •  Umiditate 62%  •  Vânt 12 km/h"
         preview.findViewById<TextView>(R.id.hourly_label).text = "PROGNOZĂ ORARĂ · 6 H"
         val previewHourly = listOf(
-            "12:00\\n🌤️\\n18°\\n0%", "13:00\\n☀️\\n19°\\n0%", "14:00\\n☀️\\n20°\\n0%",
-            "15:00\\n🌤️\\n20°\\n5%", "16:00\\n🌤️\\n19°\\n5%", "17:00\\n☁️\\n18°\\n10%"
+            "12:00\n🌤️\n18°\n0%", "13:00\n☀️\n19°\n0%", "14:00\n☀️\n20°\n0%",
+            "15:00\n🌤️\n20°\n5%", "16:00\n🌤️\n19°\n5%", "17:00\n☁️\n18°\n10%"
         )
         listOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6)
             .forEachIndexed { index, id -> preview.findViewById<TextView>(id).text = previewHourly[index] }
