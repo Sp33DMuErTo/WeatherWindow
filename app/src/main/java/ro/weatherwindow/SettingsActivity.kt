@@ -63,9 +63,9 @@ class SettingsActivity : Activity() {
         preview.findViewById<TextView>(R.id.details).text = "Se simte 17°  •  Umiditate 62%  •  Vânt 12 km/h"
         preview.findViewById<TextView>(R.id.hourly_label).text = "PROGNOZĂ ORARĂ · 6 H"
         preview.findViewById<TextView>(R.id.hourly_left).text =
-            "12:00 🌤️ 18°/0%\\n13:00 ☀️ 19°/0%\\n14:00 ☀️ 20°/0%"
+            "12:00 🌤️ 18°/0%\n13:00 ☀️ 19°/0%\n14:00 ☀️ 20°/0%"
         preview.findViewById<TextView>(R.id.hourly_right).text =
-            "15:00 🌤️ 20°/5%\\n16:00 🌤️ 19°/5%\\n17:00 ☁️ 18°/10%"
+            "15:00 🌤️ 20°/5%\n16:00 🌤️ 19°/5%\n17:00 ☁️ 18°/10%"
         preview.findViewById<TextView>(R.id.daily_label).text = "URMĂTOARELE 7 ZILE"
         preview.findViewById<TextView>(R.id.daily).text =
             "Azi ☀️ 18°/12°  ·  Lun 🌤️ 20°/13°\nMar ☁️ 19°/11°  ·  Mie 🌧️ 17°/10°\nJoi 🌦️ 18°/9°  ·  Vin ☀️ 21°/12°\nSâm 🌤️ 22°/13°"
