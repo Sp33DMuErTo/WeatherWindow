@@ -154,9 +154,11 @@ class SettingsActivity : Activity() {
                     .putInt("shared_size_condition", 18).putInt("shared_size_details", 16)
                     .putInt("shared_size_hourly", 12).putInt("shared_size_daily", 12)
                     .putInt("background_opacity", 100)
+                    .remove("text_color_enabled").remove("text_color")
                     .apply()
                 WeatherWidgetProvider.updateTextSizes(this@SettingsActivity)
                 WeatherWidgetProvider.updateBackgroundOpacity(this@SettingsActivity)
+                WeatherWidgetProvider.updateTextColor(this@SettingsActivity)
                 recreate()
             }
         }, LinearLayout.LayoutParams(
