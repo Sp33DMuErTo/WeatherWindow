@@ -68,9 +68,13 @@ class SettingsActivity : Activity() {
         )
         listOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6)
             .forEachIndexed { index, id -> preview.findViewById<TextView>(id).text = previewHourly[index] }
-        preview.findViewById<TextView>(R.id.daily_label).text = "URMĂTOARELE 7 ZILE"
-        preview.findViewById<TextView>(R.id.daily).text =
-            "Azi ☀️ 18°/12°  ·  Lun 🌤️ 20°/13°\nMar ☁️ 19°/11°  ·  Mie 🌧️ 17°/10°\nJoi 🌦️ 18°/9°  ·  Vin ☀️ 21°/12°\nSâm 🌤️ 22°/13°"
+        preview.findViewById<TextView>(R.id.daily_label).text = "URMĂTOARELE 6 ZILE"
+        val previewDaily = listOf(
+            "Dum\\n20°/13°\\n☀️\\n0%", "Lun\\n21°/14°\\n🌤️\\n5%", "Mar\\n19°/12°\\n☁️\\n10%",
+            "Mie\\n17°/11°\\n🌧️\\n65%", "Joi\\n18°/10°\\n🌦️\\n35%", "Vin\\n22°/13°\\n☀️\\n0%"
+        )
+        listOf(R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6)
+            .forEachIndexed { index, id -> preview.findViewById<TextView>(id).text = previewDaily[index] }
         preview.findViewById<View>(R.id.weather_background).setBackgroundColor(Color.rgb(48, 75, 96))
         preview.findViewById<View>(R.id.weather_background).alpha = 0.35f
         listOf(
@@ -105,7 +109,7 @@ class SettingsActivity : Activity() {
         addTextSizeControl(controls, "Condiții meteo", "size_condition", 9, 24, 18)
         addTextSizeControl(controls, "Detalii (resimțită, umiditate, vânt)", "size_details", 8, 22, 16)
         addTextSizeControl(controls, "Prognoză orară", "size_hourly", 7, 20, 14)
-        addTextSizeControl(controls, "Prognoză 7 zile", "size_daily", 7, 18, 11)
+        addTextSizeControl(controls, "Prognoză 6 zile", "size_daily", 7, 18, 11)
         val controlsScroll = ScrollView(this).apply {
             isFillViewport = true
             addView(controls)
