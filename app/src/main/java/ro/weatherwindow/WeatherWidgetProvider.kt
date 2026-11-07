@@ -97,15 +97,15 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             views.setTextViewTextSize(R.id.temperature, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_temperature", 53).toFloat())
             views.setTextViewTextSize(R.id.condition, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_condition", 18).toFloat())
             views.setTextViewTextSize(R.id.details, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_details", 16).toFloat())
-            val hourlySize = prefs.getInt("size_hourly", 14).toFloat()
+            val hourlySize = prefs.getInt("size_hourly", 12).coerceIn(8, 16).toFloat()
             intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6).forEach { id ->
                 views.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, hourlySize)
             }
             views.setTextViewTextSize(R.id.hourly_label, TypedValue.COMPLEX_UNIT_SP, hourlySize + 1)
             intArrayOf(R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6).forEach { id ->
-                views.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_daily", 11).toFloat())
+                views.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_daily", 12).coerceIn(8, 16).toFloat())
             }
-            views.setTextViewTextSize(R.id.daily_label, TypedValue.COMPLEX_UNIT_SP, (prefs.getInt("size_daily", 11) + 1).toFloat())
+            views.setTextViewTextSize(R.id.daily_label, TypedValue.COMPLEX_UNIT_SP, (prefs.getInt("size_daily", 12).coerceIn(8, 16) + 1).toFloat())
         }
 
         private fun weatherBackground(context: Context, code: Int): Bitmap? {
