@@ -70,8 +70,8 @@ class SettingsActivity : Activity() {
             .forEachIndexed { index, id -> preview.findViewById<TextView>(id).text = previewHourly[index] }
         preview.findViewById<TextView>(R.id.daily_label).text = "URMĂTOARELE 6 ZILE"
         val previewDaily = listOf(
-            "Dum\\n20°/13°\\n☀️\\n0%", "Lun\\n21°/14°\\n🌤️\\n5%", "Mar\\n19°/12°\\n☁️\\n10%",
-            "Mie\\n17°/11°\\n🌧️\\n65%", "Joi\\n18°/10°\\n🌦️\\n35%", "Vin\\n22°/13°\\n☀️\\n0%"
+            "Dum\n20°/13°\n☀️\n0%", "Lun\n21°/14°\n🌤️\n5%", "Mar\n19°/12°\n☁️\n10%",
+            "Mie\n17°/11°\n🌧️\n65%", "Joi\n18°/10°\n🌦️\n35%", "Vin\n22°/13°\n☀️\n0%"
         )
         listOf(R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6)
             .forEachIndexed { index, id -> preview.findViewById<TextView>(id).text = previewDaily[index] }
