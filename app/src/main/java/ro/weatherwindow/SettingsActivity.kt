@@ -30,6 +30,12 @@ class SettingsActivity : Activity() {
     private var previewOverlay: View? = null
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
     private val previewTextScale = 0.72f
+    private fun previewScaleFor(key: String): Float = when (key) {
+        "size_location" -> 0.52f
+        "size_temperature" -> 0.46f
+        "size_details" -> 0.52f
+        else -> previewTextScale
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -209,7 +215,7 @@ class SettingsActivity : Activity() {
             "size_daily" to 12
         )
         sizes.forEach { (key, defaultValue) ->
-            previewViews[key]?.textSize = prefs.getInt(key, defaultValue) * previewTextScale
+            previewViews[key]?.textSize = prefs.getInt("shared_$key", defaultValue) * previewScaleFor(key)
         }
         previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = prefs.getInt("shared_size_hourly", prefs.getInt("size_hourly_5x4", 12)).coerceIn(8, 16) * previewTextScale }
         previewViews.filterKeys { it.startsWith("size_daily") }.values.forEach { it.textSize = prefs.getInt("shared_size_daily", prefs.getInt("size_daily_5x4", 12)).coerceIn(8, 16) * previewTextScale }
@@ -613,7 +619,7 @@ class SettingsActivity : Activity() {
                     valueLabel.text = "$label: ${value}sp"
                     if (fromUser) {
                         prefs.edit().putInt(storedKey, value).apply()
-                        previewViews[preferenceKey]?.textSize = value * previewTextScale
+                        previewViews[preferenceKey]?.textSize = value * previewScaleFor(preferenceKey)
                         if (preferenceKey == "size_hourly") {
                             previewViews.filterKeys { it.startsWith("size_hourly") }.values.forEach { it.textSize = value * previewTextScale }
                             previewViews["label_hourly"]?.textSize = (value + 1) * previewTextScale
