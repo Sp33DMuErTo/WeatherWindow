@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
@@ -13,6 +14,11 @@ import android.util.TypedValue
 import android.widget.RemoteViews
 
 class WeatherWidgetProvider : AppWidgetProvider() {
+    override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, appWidgetId: Int, newOptions: Bundle) {
+        super.onAppWidgetOptionsChanged(context, manager, appWidgetId, newOptions)
+        updateTextSizes(context)
+    }
+
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
         val prefs = context.getSharedPreferences("weather", Context.MODE_PRIVATE)
         if (prefs.contains("lat")) {
@@ -41,7 +47,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             val ids = manager.getAppWidgetIds(ComponentName(context, WeatherWidgetProvider::class.java))
             ids.forEach { id ->
                 val views = RemoteViews(context.packageName, R.layout.weather_widget)
-                applyTextSizes(context, views)
+                applyTextSizes(context, views, manager.getAppWidgetOptions(id))
                 manager.partiallyUpdateAppWidget(id, views)
             }
         }
@@ -80,7 +86,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 dailyIds.forEachIndexed { index, id ->
                     views.setTextViewText(id, weather.dailyColumns.getOrElse(index) { "--\n--°/--°\n—\n--%" })
                 }
-                applyTextSizes(context, views)
+                applyTextSizes(context, views, manager.getAppWidgetOptions(id))
                 weatherBackground(context, weather.code)?.let {
                     views.setImageViewBitmap(R.id.weather_background, it)
                 }
@@ -91,21 +97,30 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             }
         }
 
-        private fun applyTextSizes(context: Context, views: RemoteViews) {
+        private fun applyTextSizes(context: Context, views: RemoteViews, options: Bundle? = null) {
             val prefs = context.getSharedPreferences("weather", Context.MODE_PRIVATE)
-            views.setTextViewTextSize(R.id.location, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_location", 22).toFloat())
-            views.setTextViewTextSize(R.id.temperature, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_temperature", 53).toFloat())
-            views.setTextViewTextSize(R.id.condition, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_condition", 18).toFloat())
-            views.setTextViewTextSize(R.id.details, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_details", 16).toFloat())
-            val hourlySize = prefs.getInt("size_hourly", 12).coerceIn(8, 16).toFloat()
+            // A four-row widget is the design reference; shorter widgets scale all content.
+            val availableHeight = options?.getInt(
+                AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,
+                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 280)
+            ) ?: 280
+            val scale = (availableHeight / 280f).coerceIn(0.72f, 1f)
+            val contentPadding = (11 * scale).toInt()
+            views.setViewPadding(R.id.widget_content, contentPadding, contentPadding, contentPadding, contentPadding)
+            fun scaled(value: Int) = (value * scale).coerceAtLeast(7f)
+            views.setTextViewTextSize(R.id.location, TypedValue.COMPLEX_UNIT_SP, scaled(prefs.getInt("size_location", 22)))
+            views.setTextViewTextSize(R.id.temperature, TypedValue.COMPLEX_UNIT_SP, scaled(prefs.getInt("size_temperature", 53)))
+            views.setTextViewTextSize(R.id.condition, TypedValue.COMPLEX_UNIT_SP, scaled(prefs.getInt("size_condition", 18)))
+            views.setTextViewTextSize(R.id.details, TypedValue.COMPLEX_UNIT_SP, scaled(prefs.getInt("size_details", 16)))
+            val hourlySize = scaled(prefs.getInt("size_hourly", 12).coerceIn(8, 16))
             intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6).forEach { id ->
                 views.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, hourlySize)
             }
-            views.setTextViewTextSize(R.id.hourly_label, TypedValue.COMPLEX_UNIT_SP, hourlySize + 1)
+            views.setTextViewTextSize(R.id.hourly_label, TypedValue.COMPLEX_UNIT_SP, hourlySize + scale)
             intArrayOf(R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6).forEach { id ->
-                views.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_daily", 12).coerceIn(8, 16).toFloat())
+                views.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, scaled(prefs.getInt("size_daily", 12).coerceIn(8, 16)))
             }
-            views.setTextViewTextSize(R.id.daily_label, TypedValue.COMPLEX_UNIT_SP, (prefs.getInt("size_daily", 12).coerceIn(8, 16) + 1).toFloat())
+            views.setTextViewTextSize(R.id.daily_label, TypedValue.COMPLEX_UNIT_SP, scaled(prefs.getInt("size_daily", 12).coerceIn(8, 16)) + scale)
         }
 
         private fun weatherBackground(context: Context, code: Int): Bitmap? {
@@ -137,7 +152,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 intArrayOf(R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6).forEach { id ->
                     views.setTextViewText(id, "--\n--°/--°\n—\n--%")
                 }
-                applyTextSizes(context, views)
+                applyTextSizes(context, views, manager.getAppWidgetOptions(id))
                 weatherBackground(context, 3)?.let { views.setImageViewBitmap(R.id.weather_background, it) }
                 applyBackgroundOpacity(context, views)
                 val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
