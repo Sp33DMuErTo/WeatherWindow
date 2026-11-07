@@ -70,25 +70,47 @@
             android:layout_marginTop="7dp"
             android:background="#547084" />
         <TextView
+            android:id="@+id/hourly_label"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="5dp"
-            android:id="@+id/hourly_label"
             android:text="PROGNOZĂ ORARĂ · 24 H"
             android:textColor="#AFC8DA"
             android:textSize="8sp"
             android:textStyle="bold" />
-        <TextView
-            android:id="@+id/hourly"
+
+        <LinearLayout
+            android:id="@+id/hourly_grid"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="2dp"
-            android:text="Prognoza orară va apărea aici"
-            android:textColor="#F0F5F8"
-            android:textSize="8sp"
-            android:lineSpacingExtra="1dp"
-            android:maxLines="4"
-            android:fontFamily="monospace" />
+            android:orientation="horizontal"
+            android:gravity="top"
+            android:layout_marginTop="2dp">
+
+            <TextView
+                android:id="@+id/hourly_left"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Prognoza orară"
+                android:textColor="#F0F5F8"
+                android:textSize="8sp"
+                android:lineSpacingExtra="0dp"
+                android:includeFontPadding="false"
+                android:fontFamily="monospace" />
+
+            <TextView
+                android:id="@+id/hourly_right"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="5dp"
+                android:textColor="#F0F5F8"
+                android:textSize="8sp"
+                android:lineSpacingExtra="0dp"
+                android:includeFontPadding="false"
+                android:fontFamily="monospace" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"
@@ -96,10 +118,10 @@
             android:layout_marginTop="5dp"
             android:background="#547084" />
         <TextView
+            android:id="@+id/daily_label"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
-            android:id="@+id/daily_label"
             android:text="URMĂTOARELE 7 ZILE"
             android:textColor="#AFC8DA"
             android:textSize="8sp"
@@ -112,7 +134,8 @@
             android:text="Prognoza pe 7 zile va apărea aici"
             android:textColor="#F0F5F8"
             android:textSize="8sp"
-            android:lineSpacingExtra="1dp"
+            android:lineSpacingExtra="0dp"
+            android:includeFontPadding="false"
             android:maxLines="8" />
     </LinearLayout>
 </FrameLayout>
