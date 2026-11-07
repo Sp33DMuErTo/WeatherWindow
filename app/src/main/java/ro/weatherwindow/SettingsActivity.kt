@@ -5,9 +5,9 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
-import android.view.Gravity
 import android.view.View
 import android.widget.Button
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.SeekBar
@@ -15,24 +15,20 @@ import android.widget.TextView
 
 class SettingsActivity : Activity() {
     private val prefs by lazy { getSharedPreferences("weather", Context.MODE_PRIVATE) }
-    private val previewTexts = mutableMapOf<String, TextView>()
-
+    private val previewViews = mutableMapOf<String, TextView>()
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(18), dp(12), dp(18), dp(12))
             setBackgroundColor(Color.rgb(19, 35, 50))
         }
-
         root.addView(Button(this).apply {
             text = "← Înapoi"
             setOnClickListener { finish() }
         })
-
         root.addView(TextView(this).apply {
             text = "⚙️ Setări widget"
             textSize = 25f
@@ -40,16 +36,14 @@ class SettingsActivity : Activity() {
             typeface = Typeface.DEFAULT_BOLD
             setPadding(0, dp(10), 0, dp(3))
         })
-
         root.addView(TextView(this).apply {
-            text = "Modifică dimensiunile textului și vezi rezultatul în previzualizarea live."
+            text = "Modifică dimensiunile și vezi exact aranjarea widgetului."
             textSize = 14f
             setTextColor(Color.LTGRAY)
             setPadding(0, 0, 0, dp(8))
         })
-
         root.addView(TextView(this).apply {
-            text = "PREVIZUALIZARE LIVE"
+            text = "PREVIZUALIZARE LIVE · STRUCTURĂ REALĂ"
             textSize = 12f
             setTextColor(Color.rgb(175, 200, 218))
             typeface = Typeface.DEFAULT_BOLD
@@ -60,52 +54,37 @@ class SettingsActivity : Activity() {
             isFillViewport = true
             isVerticalScrollBarEnabled = false
         }
-        val previewCard = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(12), dp(10), dp(12), dp(10))
-            setBackgroundColor(Color.rgb(32, 53, 70))
-        }
-
-        val topRow = LinearLayout(this).apply {
-            orientation = LinearLayout.HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-        }
-        previewTexts["size_location"] = previewText("Ploiești", 22f, true).apply {
-            maxLines = 1
-            ellipsize = android.text.TextUtils.TruncateAt.END
-            layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
-        }
-        previewTexts["size_temperature"] = previewText("18°", 53f, true).apply {
-            gravity = Gravity.END
-        }
-        topRow.addView(previewTexts.getValue("size_location"))
-        topRow.addView(previewTexts.getValue("size_temperature"))
-        previewCard.addView(topRow)
-
-        previewTexts["size_condition"] = previewText("🌤️  Parțial noros", 18f)
-        previewCard.addView(previewTexts.getValue("size_condition"))
-        previewTexts["size_details"] = previewText("Se simte 17°  •  Umiditate 62%  •  Vânt 12 km/h", 16f)
-        previewCard.addView(previewTexts.getValue("size_details"))
-
-        previewCard.addView(separator())
-        previewTexts["label_hourly"] = previewText("PROGNOZĂ ORARĂ · 24 H", 15f, true)
-        previewCard.addView(previewTexts.getValue("label_hourly"))
-        previewTexts["size_hourly"] = previewText("12:00 🌤️ 18°/0%  ·  13:00 ☀️ 19°/0%\n14:00 ☀️ 20°/0%  ·  15:00 🌤️ 20°/5%", 14f)
-        previewTexts.getValue("size_hourly").typeface = Typeface.MONOSPACE
-        previewCard.addView(previewTexts.getValue("size_hourly"))
-
-        previewCard.addView(separator())
-        previewTexts["label_daily"] = previewText("URMĂTOARELE 7 ZILE", 12f, true)
-        previewCard.addView(previewTexts.getValue("label_daily"))
-        previewTexts["size_daily"] = previewText(
-            "Azi ☀️ 18°/12°  ·  Lun 🌤️ 20°/13°\nMar ☁️ 19°/11°  ·  Mie 🌧️ 17°/10°\nJoi 🌦️ 18°/9°  ·  Vin ☀️ 21°/12°\nSâm 🌤️ 22°/13°",
-            11f
-        )
-        previewCard.addView(previewTexts.getValue("size_daily"))
-
-        previewScroll.addView(previewCard)
+        val preview = layoutInflater.inflate(R.layout.weather_widget, previewScroll, false)
+        preview.findViewById<TextView>(R.id.location).text = "Ploiești"
+        preview.findViewById<TextView>(R.id.temperature).text = "18°"
+        preview.findViewById<TextView>(R.id.condition).text = "🌤️  Parțial noros"
+        preview.findViewById<TextView>(R.id.details).text = "Se simte 17°  •  Umiditate 62%  •  Vânt 12 km/h"
+        preview.findViewById<TextView>(R.id.hourly_label).text = "PROGNOZĂ ORARĂ · 24 H"
+        preview.findViewById<TextView>(R.id.hourly_left).text =
+            "12:00 🌤️ 18°/0%\n13:00 ☀️ 19°/0%\n14:00 ☀️ 20°/0%\n15:00 🌤️ 20°/5%\n16:00 🌤️ 19°/5%\n17:00 ☁️ 18°/10%\n18:00 ☁️ 17°/15%\n19:00 🌧️ 16°/40%\n20:00 🌧️ 15°/55%\n21:00 🌧️ 14°/65%\n22:00 ☁️ 13°/20%\n23:00 ☁️ 12°/10%"
+        preview.findViewById<TextView>(R.id.hourly_right).text =
+            "00:00 ☁️ 12°/10%\n01:00 ☁️ 11°/5%\n02:00 🌙 11°/0%\n03:00 🌙 10°/0%\n04:00 🌙 10°/0%\n05:00 🌤️ 10°/0%\n06:00 🌤️ 11°/0%\n07:00 ☀️ 12°/0%\n08:00 ☀️ 14°/0%\n09:00 🌤️ 16°/0%\n10:00 🌤️ 17°/0%\n11:00 ☀️ 18°/0%"
+        preview.findViewById<TextView>(R.id.daily_label).text = "URMĂTOARELE 7 ZILE"
+        preview.findViewById<TextView>(R.id.daily).text =
+            "Azi ☀️ 18°/12°  ·  Lun 🌤️ 20°/13°\nMar ☁️ 19°/11°  ·  Mie 🌧️ 17°/10°\nJoi 🌦️ 18°/9°  ·  Vin ☀️ 21°/12°\nSâm 🌤️ 22°/13°"
+        preview.findViewById<View>(R.id.weather_background).setBackgroundColor(Color.rgb(48, 75, 96))
+        preview.findViewById<View>(R.id.weather_background).alpha = 0.35f
+        listOf(
+            "size_location" to R.id.location,
+            "size_temperature" to R.id.temperature,
+            "size_condition" to R.id.condition,
+            "size_details" to R.id.details,
+            "size_hourly" to R.id.hourly_left,
+            "size_daily" to R.id.daily
+        ).forEach { (key, id) -> previewViews[key] = preview.findViewById(id) }
+        previewViews["size_hourly_right"] = preview.findViewById(R.id.hourly_right)
+        previewViews["label_hourly"] = preview.findViewById(R.id.hourly_label)
+        previewViews["label_daily"] = preview.findViewById(R.id.daily_label)
+        previewScroll.addView(preview, FrameLayout.LayoutParams(
+            FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.WRAP_CONTENT
+        ))
         root.addView(previewScroll, LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, dp(250)
+            LinearLayout.LayoutParams.MATCH_PARENT, dp(300)
         ))
 
         root.addView(TextView(this).apply {
@@ -115,7 +94,6 @@ class SettingsActivity : Activity() {
             typeface = Typeface.DEFAULT_BOLD
             setPadding(0, dp(10), 0, dp(3))
         })
-
         val controls = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         addTextSizeControl(controls, "Locație", "size_location", 10, 30, 22)
         addTextSizeControl(controls, "Temperatură", "size_temperature", 24, 64, 53)
@@ -123,7 +101,6 @@ class SettingsActivity : Activity() {
         addTextSizeControl(controls, "Detalii (resimțită, umiditate, vânt)", "size_details", 8, 22, 16)
         addTextSizeControl(controls, "Prognoză orară", "size_hourly", 7, 20, 14)
         addTextSizeControl(controls, "Prognoză 7 zile", "size_daily", 7, 18, 11)
-
         val controlsScroll = ScrollView(this).apply {
             isFillViewport = true
             addView(controls)
@@ -131,7 +108,6 @@ class SettingsActivity : Activity() {
         root.addView(controlsScroll, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
         ))
-
         root.addView(Button(this).apply {
             text = "Resetează la dimensiunile implicite"
             setOnClickListener {
@@ -149,29 +125,8 @@ class SettingsActivity : Activity() {
         }, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply { topMargin = dp(8) })
-
         setContentView(root)
         applyPreviewSizes()
-    }
-
-    private fun previewText(value: String, size: Float, bold: Boolean = false): TextView =
-        TextView(this).apply {
-            text = value
-            textSize = size
-            setTextColor(Color.WHITE)
-            if (bold) typeface = Typeface.DEFAULT_BOLD
-            setPadding(0, dp(2), 0, dp(2))
-        }
-
-    private fun separator(): View = View(this).apply {
-        setBackgroundColor(Color.rgb(84, 112, 132))
-    }.also {
-        it.layoutParams = LinearLayout.LayoutParams(
-            LinearLayout.LayoutParams.MATCH_PARENT, dp(1)
-        ).apply {
-            topMargin = dp(5)
-            bottomMargin = dp(4)
-        }
     }
 
     private fun applyPreviewSizes() {
@@ -184,19 +139,16 @@ class SettingsActivity : Activity() {
             "size_daily" to 11
         )
         sizes.forEach { (key, defaultValue) ->
-            previewTexts[key]?.textSize = prefs.getInt(key, defaultValue).toFloat()
+            previewViews[key]?.textSize = prefs.getInt(key, defaultValue).toFloat()
         }
-        previewTexts["label_hourly"]?.textSize = (prefs.getInt("size_hourly", 14) + 1).toFloat()
-        previewTexts["label_daily"]?.textSize = (prefs.getInt("size_daily", 11) + 1).toFloat()
+        previewViews["size_hourly_right"]?.textSize = prefs.getInt("size_hourly", 14).toFloat()
+        previewViews["label_hourly"]?.textSize = (prefs.getInt("size_hourly", 14) + 1).toFloat()
+        previewViews["label_daily"]?.textSize = (prefs.getInt("size_daily", 11) + 1).toFloat()
     }
 
     private fun addTextSizeControl(
-        parent: LinearLayout,
-        label: String,
-        preferenceKey: String,
-        min: Int,
-        max: Int,
-        defaultValue: Int
+        parent: LinearLayout, label: String, preferenceKey: String,
+        min: Int, max: Int, defaultValue: Int
     ) {
         val current = prefs.getInt(preferenceKey, defaultValue).coerceIn(min, max)
         val valueLabel = TextView(this).apply {
@@ -214,12 +166,13 @@ class SettingsActivity : Activity() {
                     valueLabel.text = "$label: ${value}sp"
                     if (fromUser) {
                         prefs.edit().putInt(preferenceKey, value).apply()
-                        previewTexts[preferenceKey]?.textSize = value.toFloat()
+                        previewViews[preferenceKey]?.textSize = value.toFloat()
                         if (preferenceKey == "size_hourly") {
-                            previewTexts["label_hourly"]?.textSize = (value + 1).toFloat()
+                            previewViews["size_hourly_right"]?.textSize = value.toFloat()
+                            previewViews["label_hourly"]?.textSize = (value + 1).toFloat()
                         }
                         if (preferenceKey == "size_daily") {
-                            previewTexts["label_daily"]?.textSize = (value + 1).toFloat()
+                            previewViews["label_daily"]?.textSize = (value + 1).toFloat()
                         }
                         WeatherWidgetProvider.updateTextSizes(this@SettingsActivity)
                     }
