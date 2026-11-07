@@ -263,7 +263,7 @@ class SettingsActivity : Activity() {
         parent.addView(row)
         parent.addView(Button(this).apply {
             text = "Alege o culoare personalizată"
-            setOnClickListener { showCustomTextColorDialog(refreshLabel) }
+            setOnClickListener { showCustomTextColorDialog { refreshLabel() } }
         }, LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
         ).apply { topMargin = dp(4); bottomMargin = dp(7) })
