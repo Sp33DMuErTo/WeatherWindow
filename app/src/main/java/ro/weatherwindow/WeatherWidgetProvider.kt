@@ -100,9 +100,11 @@ class WeatherWidgetProvider : AppWidgetProvider() {
         private fun applyTextSizes(context: Context, views: RemoteViews, options: Bundle? = null) {
             val prefs = context.getSharedPreferences("weather", Context.MODE_PRIVATE)
             // A four-row widget is the design reference; shorter widgets scale all content.
+            // MIN_HEIGHT is the host-reported lower bound for the widget's current
+            // placement. MAX_HEIGHT can remain at the previous larger size on some launchers.
             val availableHeight = options?.getInt(
-                AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT,
-                options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 280)
+                AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,
+                280
             ) ?: 280
             val scale = (availableHeight / 280f).coerceIn(0.55f, 1f)
             val contentPadding = (11 * scale).toInt()
