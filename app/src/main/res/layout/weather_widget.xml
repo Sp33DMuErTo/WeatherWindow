@@ -113,6 +113,6 @@
             android:textColor="#F0F5F8"
             android:textSize="8sp"
             android:lineSpacingExtra="1dp"
-            android:maxLines="2" />
+            android:maxLines="8" />
     </LinearLayout>
 </FrameLayout>
