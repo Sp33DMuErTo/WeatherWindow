@@ -88,7 +88,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setViewVisibility(R.id.gps_indicator, if (gpsSelected) android.view.View.VISIBLE else android.view.View.GONE)
                 views.setImageViewBitmap(R.id.weather_animation, WeatherAnimationFrames.render(weather.code, 0))
                 context.getSharedPreferences("weather", Context.MODE_PRIVATE).edit().putInt("weather_code", weather.code).apply()
-                views.setTextViewText(R.id.details, "Se simte ${weather.feelsLike}°  •  Umiditate ${weather.humidity}%  •  Vânt ${weather.wind} km/h")
+                views.setTextViewText(R.id.details, "Se simte ${weather.feelsLike}°  •  Vânt ${weather.wind} km/h  •  Apus ${weather.sunset}")
                 val hourlyIds = intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6)
                 hourlyIds.forEachIndexed { index, id ->
                     views.setTextViewText(id, weather.hourlyColumns.getOrElse(index) { "--:--\n—\n--°\n--%" })
