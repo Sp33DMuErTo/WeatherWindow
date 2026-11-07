@@ -346,7 +346,7 @@ class MainActivity : Activity() {
             row.addView(label(hour.time, 15f, Color.WHITE, true), LinearLayout.LayoutParams(dp(58), LinearLayout.LayoutParams.WRAP_CONTENT))
             row.addView(label(WeatherRepository.symbol(hour.code), 27f, Color.WHITE), LinearLayout.LayoutParams(dp(52), LinearLayout.LayoutParams.WRAP_CONTENT))
             row.addView(label("${hour.temperature}°", 21f, Color.WHITE, true), LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f))
-            row.addView(label("💧 ${hour.precipitation}%", 14f, Color.rgb(133, 205, 242), true))
+            row.addView(label("${hour.precipitation}%", 14f, Color.rgb(133, 205, 242), true))
             val details = LinearLayout(this).apply {
                 orientation = LinearLayout.VERTICAL
                 visibility = View.GONE
