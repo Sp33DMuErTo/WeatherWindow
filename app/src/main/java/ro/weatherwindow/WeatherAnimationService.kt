@@ -43,7 +43,7 @@ class WeatherAnimationService : Service() {
                 views.setImageViewBitmap(R.id.weather_animation, bitmap)
                 manager.partiallyUpdateAppWidget(id, views)
             }
-            handler.postDelayed(this, 220L)
+            handler.postDelayed(this, 100L)
         }
     }
 
@@ -185,7 +185,7 @@ internal object WeatherAnimationFrames {
                 }
             }
             5 -> {
-                p.color = 0xFFFFE27A.toInt()
+                p.color = if (phase % 12 < 3) 0xFFFFE27A.toInt() else 0x88FFE27A.toInt()
                 p.strokeWidth = 11f
                 p.strokeJoin = Paint.Join.ROUND
                 val bolt = Path().apply {
