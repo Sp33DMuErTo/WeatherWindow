@@ -36,13 +36,12 @@ class WeatherWidgetProvider : AppWidgetProvider() {
         private val backgroundCache = mutableMapOf<Int, Bitmap>()
 
         fun updateTextSizes(context: Context) {
-            val prefs = context.getSharedPreferences("weather", Context.MODE_PRIVATE)
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, WeatherWidgetProvider::class.java))
             ids.forEach { id ->
                 val views = RemoteViews(context.packageName, R.layout.weather_widget)
                 applyTextSizes(context, views)
-                manager.updateAppWidget(id, views)
+                manager.partiallyUpdateAppWidget(id, views)
             }
         }
 
