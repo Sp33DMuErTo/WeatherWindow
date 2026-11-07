@@ -6,6 +6,9 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.util.Base64
 import android.widget.RemoteViews
 
 class WeatherWidgetProvider : AppWidgetProvider() {
@@ -30,6 +33,8 @@ class WeatherWidgetProvider : AppWidgetProvider() {
     }
 
     companion object {
+        private val backgroundCache = mutableMapOf<Int, Bitmap>()
+
         fun updateAll(context: Context, weather: WeatherSnapshot) {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, WeatherWidgetProvider::class.java))
@@ -41,9 +46,38 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.details, "Se simte ${weather.feelsLike}°  •  Umiditate ${weather.humidity}%  •  Vânt ${weather.wind} km/h")
                 views.setTextViewText(R.id.hourly, weather.hourly)
                 views.setTextViewText(R.id.daily, weather.daily)
+                weatherBackground(context, weather.code)?.let {
+                    views.setImageViewBitmap(R.id.weather_background, it)
+                }
                 val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                 views.setOnClickPendingIntent(R.id.widget_root, open)
                 manager.updateAppWidget(id, views)
+            }
+        }
+
+        private fun weatherBackground(context: Context, code: Int): Bitmap? {
+            val index = WeatherRepository.backgroundIndex(code)
+            synchronized(backgroundCache) {
+                backgroundCache[index]?.let { return it }
+            }
+            return try {
+                val encoded = context.assets.open("weather_sprites.webp.b64").bufferedReader().use { it.readText() }
+                val bytes = Base64.decode(encoded, Base64.DEFAULT)
+                val sprite = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null
+                val cellWidth = sprite.width / 3
+                val cellHeight = sprite.height / 2
+                val bitmap = Bitmap.createBitmap(
+                    sprite,
+                    (index % 3) * cellWidth,
+                    (index / 3) * cellHeight,
+                    cellWidth,
+                    cellHeight
+                )
+                sprite.recycle()
+                synchronized(backgroundCache) { backgroundCache[index] = bitmap }
+                bitmap
+            } catch (_: Exception) {
+                null
             }
         }
 
@@ -56,6 +90,9 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.details, "Prognoză meteo Open-Meteo")
                 views.setTextViewText(R.id.hourly, "Prognoza orară va apărea aici")
                 views.setTextViewText(R.id.daily, "Prognoza pe 7 zile va apărea aici")
+                weatherBackground(context, 3)?.let {
+                    views.setImageViewBitmap(R.id.weather_background, it)
+                }
                 val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                 views.setOnClickPendingIntent(R.id.widget_root, open)
                 AppWidgetManager.getInstance(context).updateAppWidget(id, views)
