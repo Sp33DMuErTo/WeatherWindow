@@ -106,7 +106,7 @@ class WeatherAnimationService : Service() {
     }
 }
 
-private object WeatherAnimationFrames {
+internal object WeatherAnimationFrames {
     private const val W = 360
     private const val H = 220
     private val white = Color.rgb(245, 250, 255)
