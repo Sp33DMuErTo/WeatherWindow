@@ -59,7 +59,10 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 hourlyIds.forEachIndexed { index, id ->
                     views.setTextViewText(id, weather.hourlyColumns.getOrElse(index) { "--:--\n—\n--°\n--%" })
                 }
-                views.setTextViewText(R.id.daily, weather.daily)
+                val dailyIds = intArrayOf(R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6)
+                dailyIds.forEachIndexed { index, id ->
+                    views.setTextViewText(id, weather.dailyColumns.getOrElse(index) { "--\\n--°/--°\\n—\\n--%" })
+                }
                 applyTextSizes(context, views)
                 weatherBackground(context, weather.code)?.let {
                     views.setImageViewBitmap(R.id.weather_background, it)
@@ -81,7 +84,9 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, hourlySize)
             }
             views.setTextViewTextSize(R.id.hourly_label, TypedValue.COMPLEX_UNIT_SP, hourlySize + 1)
-            views.setTextViewTextSize(R.id.daily, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_daily", 11).toFloat())
+            intArrayOf(R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6).forEach { id ->
+                views.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_daily", 11).toFloat())
+            }
             views.setTextViewTextSize(R.id.daily_label, TypedValue.COMPLEX_UNIT_SP, (prefs.getInt("size_daily", 11) + 1).toFloat())
         }
 
@@ -111,7 +116,9 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6).forEach { id ->
                     views.setTextViewText(id, "--:--\n—\n--°\n--%")
                 }
-                views.setTextViewText(R.id.daily, "Prognoza pe 7 zile va apărea aici")
+                intArrayOf(R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6).forEach { id ->
+                    views.setTextViewText(id, "--\\n--°/--°\\n—\\n--%")
+                }
                 applyTextSizes(context, views)
                 weatherBackground(context, 3)?.let { views.setImageViewBitmap(R.id.weather_background, it) }
                 val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
