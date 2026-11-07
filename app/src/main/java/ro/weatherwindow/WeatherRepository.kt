@@ -21,6 +21,7 @@ data class WeatherSnapshot(
     val hourlyRight: String,
     val hourlyColumns: List<String>,
     val hourlyFull: String,
+    val dailyColumns: List<String>,
     val daily: String
 )
 
@@ -89,7 +90,7 @@ object WeatherRepository {
     }
 
     fun load(context: Context, lat: Double, lon: Double, cityOverride: String? = null): WeatherSnapshot {
-        val address = "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&hourly=temperature_2m,precipitation_probability,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=7&timezone=auto"
+        val address = "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&hourly=temperature_2m,precipitation_probability,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&forecast_days=7&timezone=auto"
         val root = getJson(address)
         val current = root.getJSONObject("current")
         val hourly = root.getJSONObject("hourly")
@@ -109,8 +110,8 @@ object WeatherRepository {
         val hourlyColumns = (start until minOf(start + 6, times.length())).map { i ->
             "${times.optString(i).takeLast(5)}\n${symbol(hourlyCodes.optInt(i))}\n${temps.optDouble(i).toInt()}°\n${rain.optInt(i)}%"
         }
-        val dayParts = (0 until minOf(7, daily.getJSONArray("time").length())).map { i ->
-            "${dayLabel(daily.getJSONArray("time").optString(i), i)} ${symbol(daily.getJSONArray("weather_code").optInt(i))} ${daily.getJSONArray("temperature_2m_max").optDouble(i).toInt()}°/${daily.getJSONArray("temperature_2m_min").optDouble(i).toInt()}°"
+        val dayParts = (1 until minOf(7, daily.getJSONArray("time").length())).map { i ->
+            "${dayLabel(daily.getJSONArray("time").optString(i), i)}\n${daily.getJSONArray("temperature_2m_max").optDouble(i).toInt()}°/${daily.getJSONArray("temperature_2m_min").optDouble(i).toInt()}°\n${symbol(daily.getJSONArray("weather_code").optInt(i))}\n${daily.getJSONArray("precipitation_probability_max").optInt(i)}%"
         }
         val city = cityOverride ?: context.getSharedPreferences("weather", Context.MODE_PRIVATE).getString("city", "Locație salvată") ?: "Locație salvată"
         return WeatherSnapshot(
@@ -154,6 +155,7 @@ object WeatherRepository {
         if (index == 0) return "Azi"
         return try {
             LocalDate.parse(date).dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("ro", "RO"))
+                .replace(".", "")
                 .replaceFirstChar { it.uppercase(Locale("ro", "RO")) }
         } catch (_: Exception) {
             date.takeLast(5)
