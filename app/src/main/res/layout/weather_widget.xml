@@ -66,7 +66,7 @@
             android:id="@+id/details"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="3dp"
+            android:layout_marginTop="1dp"
             android:text="Se simte --°  •  Umiditate --%  •  Vânt -- km/h"
             android:textColor="#C2D4E2"
             android:textSize="9sp"
@@ -75,13 +75,13 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginTop="7dp"
+            android:layout_marginTop="1dp"
             android:background="#547084" />
         <TextView
             android:id="@+id/hourly_label"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
+            android:layout_marginTop="2dp"
             android:text="PROGNOZĂ ORARĂ · 6 H"
             android:textColor="#AFC8DA"
             android:textSize="8sp"
@@ -93,7 +93,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="top"
-            android:layout_marginTop="4dp">
+            android:layout_marginTop="1dp">
             <TextView
                 android:id="@+id/hourly_1"
                 android:layout_width="0dp"
@@ -165,13 +165,13 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="1dp"
-            android:layout_marginTop="5dp"
+            android:layout_marginTop="2dp"
             android:background="#547084" />
         <TextView
             android:id="@+id/daily_label"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="1dp"
             android:text="URMĂTOARELE 6 ZILE"
             android:textColor="#AFC8DA"
             android:textSize="8sp"
@@ -182,7 +182,7 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="top"
-            android:layout_marginTop="3dp">
+            android:layout_marginTop="1dp">
             <TextView
                 android:id="@+id/daily_1"
                 android:layout_width="0dp"
