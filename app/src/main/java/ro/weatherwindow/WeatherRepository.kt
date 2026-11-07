@@ -3,6 +3,8 @@ package ro.weatherwindow
 import android.content.Context
 import android.location.Geocoder
 import java.util.Locale
+import java.time.LocalDate
+import java.time.format.TextStyle
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -66,16 +68,17 @@ object WeatherRepository {
         val times = hourly.getJSONArray("time")
         val temps = hourly.getJSONArray("temperature_2m")
         val rain = hourly.getJSONArray("precipitation_probability")
+        val hourlyCodes = hourly.getJSONArray("weather_code")
         val now = current.optString("time")
         var start = 0
         for (i in 0 until times.length()) {
             if (times.optString(i) >= now) { start = i; break }
         }
         val hourParts = (start until minOf(start + 24, times.length())).map { i ->
-            "${times.optString(i).takeLast(5)} ${temps.optDouble(i).toInt()}°/${rain.optInt(i)}%"
+            "${times.optString(i).takeLast(5)} ${symbol(hourlyCodes.optInt(i))} ${temps.optDouble(i).toInt()}°/${rain.optInt(i)}%"
         }
         val dayParts = (0 until minOf(7, daily.getJSONArray("time").length())).map { i ->
-            "${daily.getJSONArray("time").optString(i).takeLast(5)} ${daily.getJSONArray("temperature_2m_max").optDouble(i).toInt()}°/${daily.getJSONArray("temperature_2m_min").optDouble(i).toInt()}°"
+            "${dayLabel(daily.getJSONArray("time").optString(i), i)} ${symbol(daily.getJSONArray("weather_code").optInt(i))} ${daily.getJSONArray("temperature_2m_max").optDouble(i).toInt()}°/${daily.getJSONArray("temperature_2m_min").optDouble(i).toInt()}°"
         }
         val city = cityOverride ?: context.getSharedPreferences("weather", Context.MODE_PRIVATE).getString("city", "Locație salvată") ?: "Locație salvată"
         return WeatherSnapshot(
@@ -86,8 +89,30 @@ object WeatherRepository {
             current.getDouble("wind_speed_10m").toInt(),
             current.getInt("weather_code"),
             hourParts.chunked(6).joinToString("\n") { row -> row.joinToString("  ·  ") },
-            dayParts.joinToString("  ·  ")
+            dayParts.chunked(4).joinToString("\n") { row -> row.joinToString("  ·  ") }
         )
+    }
+
+    fun symbol(code: Int): String = when (code) {
+        0 -> "☀️"
+        1, 2 -> "🌤️"
+        3 -> "☁️"
+        45, 48 -> "🌫️"
+        51, 53, 55, 56, 57 -> "🌦️"
+        61, 63, 65, 66, 67, 80, 81, 82 -> "🌧️"
+        71, 73, 75, 77, 85, 86 -> "❄️"
+        95, 96, 99 -> "⛈️"
+        else -> "🌡️"
+    }
+
+    private fun dayLabel(date: String, index: Int): String {
+        if (index == 0) return "Azi"
+        return try {
+            LocalDate.parse(date).dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("ro", "RO"))
+                .replaceFirstChar { it.uppercase(Locale("ro", "RO")) }
+        } catch (_: Exception) {
+            date.takeLast(5)
+        }
     }
 
     fun condition(code: Int): String = when (code) {
