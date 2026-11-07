@@ -1,6 +1,8 @@
 package ro.weatherwindow
 
 import android.content.Context
+import android.location.Geocoder
+import java.util.Locale
 import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
@@ -18,6 +20,20 @@ data class WeatherSnapshot(
 )
 
 object WeatherRepository {
+    fun reverseGeocode(context: Context, lat: Double, lon: Double): String? {
+        if (!Geocoder.isPresent()) return null
+        return try {
+            val geocoder = Geocoder(context, Locale("ro", "RO"))
+            @Suppress("DEPRECATION")
+            val address = geocoder.getFromLocation(lat, lon, 1)?.firstOrNull()
+            address?.locality
+                ?: address?.subAdminArea
+                ?: address?.adminArea
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     private fun getJson(address: String): JSONObject {
         val connection = (URL(address).openConnection() as HttpURLConnection).apply {
             connectTimeout = 12000
