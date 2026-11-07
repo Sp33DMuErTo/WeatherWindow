@@ -116,16 +116,16 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             val compact = availableHeight < 250
             val contentPadding = if (compact) 5 else 11
             views.setViewPadding(R.id.widget_content, contentPadding, contentPadding, contentPadding, contentPadding)
-            views.setTextViewTextSize(R.id.location, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_location", 22).toFloat())
-            views.setTextViewTextSize(R.id.temperature, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_temperature", 53).toFloat())
-            views.setTextViewTextSize(R.id.condition, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_condition", 18).toFloat())
-            views.setTextViewTextSize(R.id.details, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_details", 16).toFloat())
-            val hourlySize = prefs.getInt("size_hourly", 12).coerceIn(8, 16).toFloat()
+            views.setTextViewTextSize(R.id.location, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_location", prefs.getInt("size_location_5x4", 22)).toFloat())
+            views.setTextViewTextSize(R.id.temperature, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_temperature", prefs.getInt("size_temperature_5x4", 53)).toFloat())
+            views.setTextViewTextSize(R.id.condition, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_condition", prefs.getInt("size_condition_5x4", 18)).toFloat())
+            views.setTextViewTextSize(R.id.details, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_details", prefs.getInt("size_details_5x4", 16)).toFloat())
+            val hourlySize = prefs.getInt("shared_size_hourly", prefs.getInt("size_hourly_5x4", 12)).coerceIn(8, 16).toFloat()
             intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6).forEach { id ->
                 views.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, hourlySize)
             }
             views.setTextViewTextSize(R.id.hourly_label, TypedValue.COMPLEX_UNIT_SP, hourlySize + 1f)
-            val dailySize = prefs.getInt("size_daily", 12).coerceIn(8, 16).toFloat()
+            val dailySize = prefs.getInt("shared_size_daily", prefs.getInt("size_daily_5x4", 12)).coerceIn(8, 16).toFloat()
             intArrayOf(R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6).forEach { id ->
                 views.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, dailySize)
             }
