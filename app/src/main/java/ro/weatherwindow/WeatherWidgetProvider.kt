@@ -114,22 +114,25 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 280
             ) ?: 280
             val compact = availableHeight < 250
+            // Keep the compact 5x3 typography exactly as tuned. When the widget
+            // expands to 5x4, enlarge every text element automatically.
+            val fontScale = if (compact) 1.0f else 1.15f
             val contentPadding = if (compact) 5 else 11
             views.setViewPadding(R.id.widget_content, contentPadding, contentPadding, contentPadding, contentPadding)
-            views.setTextViewTextSize(R.id.location, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_location", prefs.getInt("size_location_5x4", 22)).toFloat())
-            views.setTextViewTextSize(R.id.temperature, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_temperature", prefs.getInt("size_temperature_5x4", 53)).toFloat())
-            views.setTextViewTextSize(R.id.condition, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_condition", prefs.getInt("size_condition_5x4", 18)).toFloat())
-            views.setTextViewTextSize(R.id.details, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_details", prefs.getInt("size_details_5x4", 16)).toFloat())
-            val hourlySize = prefs.getInt("shared_size_hourly", prefs.getInt("size_hourly_5x4", 12)).coerceIn(8, 16).toFloat()
+            views.setTextViewTextSize(R.id.location, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_location", prefs.getInt("size_location_5x4", 22)) * fontScale)
+            views.setTextViewTextSize(R.id.temperature, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_temperature", prefs.getInt("size_temperature_5x4", 53)) * fontScale)
+            views.setTextViewTextSize(R.id.condition, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_condition", prefs.getInt("size_condition_5x4", 18)) * fontScale)
+            views.setTextViewTextSize(R.id.details, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_details", prefs.getInt("size_details_5x4", 16)) * fontScale)
+            val hourlySize = prefs.getInt("shared_size_hourly", prefs.getInt("size_hourly_5x4", 12)).coerceIn(8, 16) * fontScale
             intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6).forEach { id ->
                 views.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, hourlySize)
             }
-            views.setTextViewTextSize(R.id.hourly_label, TypedValue.COMPLEX_UNIT_SP, hourlySize + 1f)
-            val dailySize = prefs.getInt("shared_size_daily", prefs.getInt("size_daily_5x4", 12)).coerceIn(8, 16).toFloat()
+            views.setTextViewTextSize(R.id.hourly_label, TypedValue.COMPLEX_UNIT_SP, hourlySize + fontScale)
+            val dailySize = prefs.getInt("shared_size_daily", prefs.getInt("size_daily_5x4", 12)).coerceIn(8, 16) * fontScale
             intArrayOf(R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6).forEach { id ->
                 views.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, dailySize)
             }
-            views.setTextViewTextSize(R.id.daily_label, TypedValue.COMPLEX_UNIT_SP, dailySize + 1f)
+            views.setTextViewTextSize(R.id.daily_label, TypedValue.COMPLEX_UNIT_SP, dailySize + fontScale)
         }
 
         private fun weatherBackground(context: Context, code: Int): Bitmap? {
