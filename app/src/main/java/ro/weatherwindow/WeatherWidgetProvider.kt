@@ -45,6 +45,23 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 manager.partiallyUpdateAppWidget(id, views)
             }
         }
+        fun updateBackgroundOpacity(context: Context) {
+            val manager = AppWidgetManager.getInstance(context)
+            val ids = manager.getAppWidgetIds(ComponentName(context, WeatherWidgetProvider::class.java))
+            ids.forEach { id ->
+                val views = RemoteViews(context.packageName, R.layout.weather_widget)
+                applyBackgroundOpacity(context, views)
+                manager.partiallyUpdateAppWidget(id, views)
+            }
+        }
+
+        private fun applyBackgroundOpacity(context: Context, views: RemoteViews) {
+            val opacity = context.getSharedPreferences("weather", Context.MODE_PRIVATE)
+                .getInt("background_opacity", 100).coerceIn(0, 100)
+            val alpha = (opacity * 255 / 100f).toInt()
+            views.setInt(R.id.weather_background, "setImageAlpha", alpha)
+            views.setInt(R.id.weather_overlay, "setImageAlpha", alpha)
+        }
 
         fun updateAll(context: Context, weather: WeatherSnapshot) {
             val manager = AppWidgetManager.getInstance(context)
@@ -64,6 +81,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     views.setTextViewText(id, weather.dailyColumns.getOrElse(index) { "--\n--°/--°\n—\n--%" })
                 }
                 applyTextSizes(context, views)
+                applyBackgroundOpacity(context, views)
                 weatherBackground(context, weather.code)?.let {
                     views.setImageViewBitmap(R.id.weather_background, it)
                 }
@@ -120,6 +138,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     views.setTextViewText(id, "--\n--°/--°\n—\n--%")
                 }
                 applyTextSizes(context, views)
+                applyBackgroundOpacity(context, views)
                 weatherBackground(context, 3)?.let { views.setImageViewBitmap(R.id.weather_background, it) }
                 val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                 views.setOnClickPendingIntent(R.id.widget_root, open)
