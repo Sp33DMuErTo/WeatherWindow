@@ -27,7 +27,20 @@ data class WeatherSnapshot(
     val daily: String
 )
 
-data class HourlyForecast(val time: String, val temperature: Int, val precipitation: Int, val code: Int)
+data class HourlyForecast(
+    val time: String,
+    val temperature: Int,
+    val precipitation: Int,
+    val code: Int,
+    val feelsLike: Int,
+    val humidity: Int,
+    val wind: Int,
+    val windDirection: Int,
+    val windGusts: Int,
+    val cloudCover: Int,
+    val precipitationMm: Double,
+    val uvIndex: Double
+)
 
 data class CitySuggestion(
     val name: String,
@@ -94,7 +107,7 @@ object WeatherRepository {
     }
 
     fun load(context: Context, lat: Double, lon: Double, cityOverride: String? = null): WeatherSnapshot {
-        val address = "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&hourly=temperature_2m,precipitation_probability,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&forecast_days=7&timezone=auto"
+        val address = "https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&hourly=temperature_2m,apparent_temperature,relative_humidity_2m,precipitation_probability,precipitation,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m,uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset&forecast_days=7&timezone=auto"
         val root = getJson(address)
         val current = root.getJSONObject("current")
         val hourly = root.getJSONObject("hourly")
@@ -104,6 +117,14 @@ object WeatherRepository {
         val temps = hourly.getJSONArray("temperature_2m")
         val rain = hourly.getJSONArray("precipitation_probability")
         val hourlyCodes = hourly.getJSONArray("weather_code")
+        val feelsLike = hourly.getJSONArray("apparent_temperature")
+        val humidity = hourly.getJSONArray("relative_humidity_2m")
+        val precipitationMm = hourly.getJSONArray("precipitation")
+        val cloudCover = hourly.getJSONArray("cloud_cover")
+        val wind = hourly.getJSONArray("wind_speed_10m")
+        val windDirection = hourly.getJSONArray("wind_direction_10m")
+        val windGusts = hourly.getJSONArray("wind_gusts_10m")
+        val uvIndex = hourly.getJSONArray("uv_index")
         val now = current.optString("time")
         var start = 0
         for (i in 0 until times.length()) {
@@ -113,7 +134,12 @@ object WeatherRepository {
             "${times.optString(i).takeLast(5)} ${symbol(hourlyCodes.optInt(i))} ${temps.optDouble(i).toInt()}°/💧 ${rain.optInt(i)}%"
         }
         val hourlyForecast = (start until minOf(start + 24, times.length())).map { i ->
-            HourlyForecast(times.optString(i).takeLast(5), temps.optDouble(i).toInt(), rain.optInt(i), hourlyCodes.optInt(i))
+            HourlyForecast(
+                times.optString(i).takeLast(5), temps.optDouble(i).toInt(), rain.optInt(i), hourlyCodes.optInt(i),
+                feelsLike.optDouble(i).toInt(), humidity.optInt(i), wind.optDouble(i).toInt(),
+                windDirection.optInt(i), windGusts.optDouble(i).toInt(), cloudCover.optInt(i),
+                precipitationMm.optDouble(i), uvIndex.optDouble(i)
+            )
         }
         val hourlyColumns = (start until minOf(start + 6, times.length())).map { i ->
             "${times.optString(i).takeLast(5)}\n${temps.optDouble(i).toInt()}°\n${symbol(hourlyCodes.optInt(i))}\n💧 ${rain.optInt(i)}%"
@@ -171,6 +197,11 @@ object WeatherRepository {
         } catch (_: Exception) {
             date.takeLast(5)
         }
+    }
+
+    fun windDirection(degrees: Int): String {
+        val directions = arrayOf("N", "NE", "E", "SE", "S", "SV", "V", "NV")
+        return directions[((degrees % 360 + 360 + 22) / 45) % 8]
     }
 
     fun condition(code: Int): String = when (code) {
