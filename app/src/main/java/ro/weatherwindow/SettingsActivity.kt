@@ -1,6 +1,7 @@
 package ro.weatherwindow
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Typeface
@@ -18,6 +19,7 @@ import android.widget.TextView
 class SettingsActivity : Activity() {
     private val prefs by lazy { getSharedPreferences("weather", Context.MODE_PRIVATE) }
     private val previewViews = mutableMapOf<String, TextView>()
+    private val previewTextViews = mutableListOf<TextView>()
     private var previewBackground: View? = null
     private var previewOverlay: View? = null
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
@@ -83,6 +85,12 @@ class SettingsActivity : Activity() {
         )
         listOf(R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6)
             .forEachIndexed { index, id -> preview.findViewById<TextView>(id).text = previewDaily[index] }
+        previewTextViews.addAll(intArrayOf(
+            R.id.location, R.id.temperature, R.id.condition, R.id.details,
+            R.id.hourly_label, R.id.daily_label,
+            R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6,
+            R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6
+        ).map { preview.findViewById<TextView>(it) })
         previewBackground = preview.findViewById(R.id.weather_background)
         previewOverlay = preview.findViewById(R.id.weather_overlay)
         val backgroundOpacity = prefs.getInt("background_opacity", 100).coerceIn(0, 100) / 100f
@@ -117,6 +125,7 @@ class SettingsActivity : Activity() {
         })
         val controls = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         addBackgroundOpacityControl(controls)
+        addTextColorControl(controls)
         root.addView(TextView(this).apply {
             text = "DIMENSIUNE TEXT"
             textSize = 12f
@@ -167,6 +176,7 @@ class SettingsActivity : Activity() {
         }
         setContentView(root)
         applyPreviewSizes()
+        applyPreviewTextColor()
     }
 
     private fun applyPreviewSizes() {
@@ -185,6 +195,158 @@ class SettingsActivity : Activity() {
         previewViews.filterKeys { it.startsWith("size_daily") }.values.forEach { it.textSize = prefs.getInt("shared_size_daily", prefs.getInt("size_daily_5x4", 12)).coerceIn(8, 16) * 1.15f }
         previewViews["label_hourly"]?.textSize = (prefs.getInt("shared_size_hourly", prefs.getInt("size_hourly_5x4", 12)).coerceIn(8, 16) + 1) * 1.15f
         previewViews["label_daily"]?.textSize = (prefs.getInt("shared_size_daily", prefs.getInt("size_daily_5x4", 12)).coerceIn(8, 16) + 1) * 1.15f
+    }
+
+
+    private fun addTextColorControl(parent: LinearLayout) {
+        parent.addView(TextView(this).apply {
+            text = "CULOAREA TEXTULUI"
+            textSize = 12f
+            setTextColor(Color.rgb(175, 200, 218))
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(0, dp(10), 0, dp(3))
+        })
+        val currentLabel = TextView(this).apply {
+            textSize = 14f
+            setTextColor(Color.WHITE)
+            setPadding(0, dp(4), 0, dp(5))
+        }
+        fun refreshLabel() {
+            currentLabel.text = if (prefs.getBoolean("text_color_enabled", false)) {
+                val color = prefs.getInt("text_color", Color.WHITE)
+                "Culoare selectată: " + String.format("#%06X", 0xFFFFFF and color)
+            } else "Culoare selectată: Originală"
+        }
+        val row = android.widget.HorizontalScrollView(this).apply {
+            isHorizontalScrollBarEnabled = false
+        }
+        val choices = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        choices.addView(Button(this).apply {
+            text = "Original"
+            setOnClickListener {
+                prefs.edit().remove("text_color_enabled").remove("text_color").apply()
+                applyPreviewTextColor()
+                WeatherWidgetProvider.updateTextColor(this@SettingsActivity)
+                refreshLabel()
+            }
+        }, LinearLayout.LayoutParams(dp(90), dp(46)).apply { rightMargin = dp(5) })
+        val colors = listOf(
+            "Alb" to Color.WHITE,
+            "Negru" to Color.BLACK,
+            "Galben" to Color.rgb(255, 213, 79),
+            "Turcoaz" to Color.rgb(128, 222, 234),
+            "Albastru" to Color.rgb(100, 181, 246),
+            "Verde" to Color.rgb(129, 199, 132),
+            "Portocaliu" to Color.rgb(255, 171, 145),
+            "Roz" to Color.rgb(244, 143, 177)
+        )
+        colors.forEach { (name, color) ->
+            choices.addView(TextView(this).apply {
+                text = "●\n" + name
+                textSize = 12f
+                gravity = android.view.Gravity.CENTER
+                setTextColor(color)
+                contentDescription = name
+                setPadding(dp(3), dp(3), dp(3), dp(3))
+                setOnClickListener {
+                    prefs.edit().putBoolean("text_color_enabled", true).putInt("text_color", color).apply()
+                    applyPreviewTextColor()
+                    WeatherWidgetProvider.updateTextColor(this@SettingsActivity)
+                    refreshLabel()
+                }
+            }, LinearLayout.LayoutParams(dp(68), dp(48)).apply { rightMargin = dp(3) })
+        }
+        row.addView(choices)
+        parent.addView(currentLabel)
+        parent.addView(row)
+        parent.addView(Button(this).apply {
+            text = "Alege o culoare personalizată"
+            setOnClickListener { showCustomTextColorDialog(refreshLabel) }
+        }, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { topMargin = dp(4); bottomMargin = dp(7) })
+        refreshLabel()
+    }
+
+    private fun applyPreviewTextColor() {
+        val enabled = prefs.getBoolean("text_color_enabled", false)
+        val selected = prefs.getInt("text_color", Color.WHITE)
+        val ids = intArrayOf(
+            R.id.location, R.id.temperature, R.id.condition, R.id.details,
+            R.id.hourly_label, R.id.daily_label,
+            R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6,
+            R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6
+        )
+        val defaults = intArrayOf(
+            Color.rgb(247, 250, 252), Color.WHITE, Color.rgb(220, 234, 244), Color.rgb(194, 212, 226),
+            Color.rgb(175, 200, 218), Color.rgb(175, 200, 218),
+            Color.rgb(240, 245, 248), Color.rgb(240, 245, 248), Color.rgb(240, 245, 248),
+            Color.rgb(240, 245, 248), Color.rgb(240, 245, 248), Color.rgb(240, 245, 248),
+            Color.rgb(240, 245, 248), Color.rgb(240, 245, 248), Color.rgb(240, 245, 248),
+            Color.rgb(240, 245, 248), Color.rgb(240, 245, 248), Color.rgb(240, 245, 248)
+        )
+        previewTextViews.forEachIndexed { index, view ->
+            view.setTextColor(if (enabled) selected else defaults[index])
+        }
+    }
+
+    private fun showCustomTextColorDialog(onApplied: () -> Unit) {
+        val existing = if (prefs.getBoolean("text_color_enabled", false))
+            prefs.getInt("text_color", Color.WHITE) else Color.WHITE
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(8), dp(20), dp(4))
+        }
+        val sample = TextView(this).apply {
+            text = "WeatherWindow  18°  ·  Prognoză meteo"
+            textSize = 19f
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(0, dp(8), 0, dp(12))
+            gravity = android.view.Gravity.CENTER
+        }
+        panel.addView(sample)
+        val bars = arrayOfNulls<SeekBar>(3)
+        val labels = arrayOf("Roșu", "Verde", "Albastru")
+        val initial = intArrayOf(Color.red(existing), Color.green(existing), Color.blue(existing))
+        val channelLabels = arrayOfNulls<TextView>(3)
+        var chosenColor = existing
+        fun updateSample() {
+            val rgb = IntArray(3) { bars[it]?.progress ?: initial[it] }
+            chosenColor = Color.rgb(rgb[0], rgb[1], rgb[2])
+            sample.setTextColor(chosenColor)
+            for (i in 0..2) channelLabels[i]?.text = labels[i] + ": " + rgb[i]
+        }
+        for (i in 0..2) {
+            val channelLabel = TextView(this).apply {
+                textSize = 13f
+                setTextColor(Color.WHITE)
+            }
+            channelLabels[i] = channelLabel
+            panel.addView(channelLabel)
+            val bar = SeekBar(this).apply {
+                max = 255
+                progress = initial[i]
+                setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) = updateSample()
+                    override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                    override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+                })
+            }
+            bars[i] = bar
+            panel.addView(bar)
+        }
+        updateSample()
+        AlertDialog.Builder(this)
+            .setTitle("Culoare personalizată · RGB")
+            .setView(panel)
+            .setNegativeButton("Anulează", null)
+            .setPositiveButton("Aplică") { _, _ ->
+                prefs.edit().putBoolean("text_color_enabled", true).putInt("text_color", chosenColor).apply()
+                applyPreviewTextColor()
+                WeatherWidgetProvider.updateTextColor(this@SettingsActivity)
+                onApplied()
+            }
+            .show()
     }
 
     private fun addBackgroundOpacityControl(parent: LinearLayout) {
