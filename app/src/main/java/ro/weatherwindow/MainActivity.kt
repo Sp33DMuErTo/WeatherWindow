@@ -15,6 +15,8 @@ import android.widget.Button
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.LinearLayout
+import android.widget.SeekBar
+import android.widget.ScrollView
 import android.widget.TextView
 import android.graphics.Color
 import android.graphics.Typeface
@@ -129,8 +131,84 @@ class MainActivity : Activity() {
                 bottomMargin = 12
             })
         }
-        setContentView(root)
+
+        val settingsTitle = TextView(this).apply {
+            text = "PERSONALIZARE WIDGET"
+            textSize = 19f
+            setTextColor(Color.WHITE)
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(0, 28, 0, 10)
+        }
+        root.addView(settingsTitle)
+        addTextSizeControl(root, "Locație", "size_location", 10, 22, 14)
+        addTextSizeControl(root, "Temperatură", "size_temperature", 24, 52, 34)
+        addTextSizeControl(root, "Condiții meteo", "size_condition", 9, 18, 12)
+        addTextSizeControl(root, "Detalii (resimțită, umiditate, vânt)", "size_details", 8, 16, 9)
+        addTextSizeControl(root, "Prognoză orară", "size_hourly", 7, 14, 8)
+        addTextSizeControl(root, "Prognoză 7 zile", "size_daily", 7, 14, 8)
+
+        val resetButton = Button(this).apply {
+            text = "Resetează dimensiunile textului"
+            setOnClickListener {
+                prefs.edit()
+                    .putInt("size_location", 14)
+                    .putInt("size_temperature", 34)
+                    .putInt("size_condition", 12)
+                    .putInt("size_details", 9)
+                    .putInt("size_hourly", 8)
+                    .putInt("size_daily", 8)
+                    .apply()
+                WeatherWidgetProvider.updateTextSizes(this@MainActivity)
+                recreate()
+            }
+        }
+        root.addView(resetButton, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            topMargin = 10
+        })
+
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            addView(root)
+        }
+        setContentView(scroll)
         if (prefs.contains("lat")) refreshSaved()
+    }
+
+    private fun addTextSizeControl(
+        parent: LinearLayout,
+        label: String,
+        preferenceKey: String,
+        min: Int,
+        max: Int,
+        defaultValue: Int
+    ) {
+        val current = prefs.getInt(preferenceKey, defaultValue).coerceIn(min, max)
+        val valueLabel = TextView(this).apply {
+            text = "$label: ${current}sp"
+            textSize = 14f
+            setTextColor(Color.WHITE)
+            setPadding(0, 8, 0, 0)
+        }
+        val seekBar = SeekBar(this).apply {
+            this.max = max - min
+            progress = current - min
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                    val value = min + progress
+                    valueLabel.text = "$label: ${value}sp"
+                    if (fromUser) {
+                        prefs.edit().putInt(preferenceKey, value).apply()
+                        WeatherWidgetProvider.updateTextSizes(this@MainActivity)
+                    }
+                }
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            })
+        }
+        parent.addView(valueLabel)
+        parent.addView(seekBar, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
+            bottomMargin = 6
+        })
     }
 
     private fun loadCity(city: String) {
