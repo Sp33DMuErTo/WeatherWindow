@@ -46,8 +46,9 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, WeatherWidgetProvider::class.java))
             ids.forEach { id ->
-                val views = RemoteViews(context.packageName, R.layout.weather_widget)
-                applyTextSizes(context, views, manager.getAppWidgetOptions(id))
+                val options = manager.getAppWidgetOptions(id)
+                val views = RemoteViews(context.packageName, widgetLayout(options))
+                applyTextSizes(context, views, options)
                 manager.partiallyUpdateAppWidget(id, views)
             }
         }
@@ -55,10 +56,15 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, WeatherWidgetProvider::class.java))
             ids.forEach { id ->
-                val views = RemoteViews(context.packageName, R.layout.weather_widget)
+                val views = RemoteViews(context.packageName, widgetLayout(manager.getAppWidgetOptions(id)))
                 applyBackgroundOpacity(context, views)
                 manager.partiallyUpdateAppWidget(id, views)
             }
+        }
+
+        private fun widgetLayout(options: Bundle?): Int {
+            val height = options?.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 280) ?: 280
+            return if (height < 250) R.layout.weather_widget_compact else R.layout.weather_widget
         }
 
         private fun applyBackgroundOpacity(context: Context, views: RemoteViews) {
@@ -73,7 +79,8 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, WeatherWidgetProvider::class.java))
             ids.forEach { id ->
-                val views = RemoteViews(context.packageName, R.layout.weather_widget)
+                val options = manager.getAppWidgetOptions(id)
+                val views = RemoteViews(context.packageName, widgetLayout(options))
                 views.setTextViewText(R.id.location, weather.city)
                 views.setTextViewText(R.id.temperature, "${weather.temperature}°")
                 views.setTextViewText(R.id.condition, "${WeatherRepository.symbol(weather.code)}  ${WeatherRepository.condition(weather.code)}")
@@ -86,7 +93,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 dailyIds.forEachIndexed { index, id ->
                     views.setTextViewText(id, weather.dailyColumns.getOrElse(index) { "--\n--°/--°\n—\n--%" })
                 }
-                applyTextSizes(context, views, manager.getAppWidgetOptions(id))
+                applyTextSizes(context, views, options)
                 weatherBackground(context, weather.code)?.let {
                     views.setImageViewBitmap(R.id.weather_background, it)
                 }
@@ -106,27 +113,23 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT,
                 280
             ) ?: 280
-            val profile = if (availableHeight < 250) "5x3" else "5x4"
-            val scale = (availableHeight / 280f).coerceIn(0.55f, 1f)
-            val contentPadding = (11 * scale).toInt()
+            val compact = availableHeight < 250
+            val contentPadding = if (compact) 5 else 11
             views.setViewPadding(R.id.widget_content, contentPadding, contentPadding, contentPadding, contentPadding)
-            fun scaled(value: Int) = (value * scale).coerceAtLeast(7f)
-            fun profileSize(key: String, defaultValue: Int) =
-                prefs.getInt("${key}_${profile}", prefs.getInt(key, defaultValue))
-            views.setTextViewTextSize(R.id.location, TypedValue.COMPLEX_UNIT_SP, scaled(profileSize("size_location", 22)))
-            views.setTextViewTextSize(R.id.temperature, TypedValue.COMPLEX_UNIT_SP, scaled(profileSize("size_temperature", 53)))
-            views.setTextViewTextSize(R.id.condition, TypedValue.COMPLEX_UNIT_SP, scaled(profileSize("size_condition", 18)))
-            views.setTextViewTextSize(R.id.details, TypedValue.COMPLEX_UNIT_SP, scaled(profileSize("size_details", 16)))
-            val hourlySize = scaled(profileSize("size_hourly", 12).coerceIn(8, 16))
+            views.setTextViewTextSize(R.id.location, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_location", 22).toFloat())
+            views.setTextViewTextSize(R.id.temperature, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_temperature", 53).toFloat())
+            views.setTextViewTextSize(R.id.condition, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_condition", 18).toFloat())
+            views.setTextViewTextSize(R.id.details, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("size_details", 16).toFloat())
+            val hourlySize = prefs.getInt("size_hourly", 12).coerceIn(8, 16).toFloat()
             intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6).forEach { id ->
                 views.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, hourlySize)
             }
-            views.setTextViewTextSize(R.id.hourly_label, TypedValue.COMPLEX_UNIT_SP, hourlySize + scale)
-            val dailySize = scaled(profileSize("size_daily", 12).coerceIn(8, 16))
+            views.setTextViewTextSize(R.id.hourly_label, TypedValue.COMPLEX_UNIT_SP, hourlySize + 1f)
+            val dailySize = prefs.getInt("size_daily", 12).coerceIn(8, 16).toFloat()
             intArrayOf(R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6).forEach { id ->
                 views.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, dailySize)
             }
-            views.setTextViewTextSize(R.id.daily_label, TypedValue.COMPLEX_UNIT_SP, dailySize + scale)
+            views.setTextViewTextSize(R.id.daily_label, TypedValue.COMPLEX_UNIT_SP, dailySize + 1f)
         }
 
         private fun weatherBackground(context: Context, code: Int): Bitmap? {
@@ -147,7 +150,8 @@ class WeatherWidgetProvider : AppWidgetProvider() {
 
         private fun updatePlaceholders(context: Context, ids: IntArray) {
             ids.forEach { id ->
-                val views = RemoteViews(context.packageName, R.layout.weather_widget)
+                val options = AppWidgetManager.getInstance(context).getAppWidgetOptions(id)
+                val views = RemoteViews(context.packageName, widgetLayout(options))
                 views.setTextViewText(R.id.location, "WeatherWindow")
                 views.setTextViewText(R.id.temperature, "--°")
                 views.setTextViewText(R.id.condition, "Deschide aplicația și alege orașul sau GPS")
@@ -158,7 +162,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 intArrayOf(R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6).forEach { id ->
                     views.setTextViewText(id, "--\n--°/--°\n—\n--%")
                 }
-                applyTextSizes(context, views, AppWidgetManager.getInstance(context).getAppWidgetOptions(id))
+                applyTextSizes(context, views, options)
                 weatherBackground(context, 3)?.let { views.setImageViewBitmap(R.id.weather_background, it) }
                 applyBackgroundOpacity(context, views)
                 val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
