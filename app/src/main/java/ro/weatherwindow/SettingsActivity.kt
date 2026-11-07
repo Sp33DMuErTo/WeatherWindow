@@ -18,6 +18,8 @@ import android.widget.TextView
 class SettingsActivity : Activity() {
     private val prefs by lazy { getSharedPreferences("weather", Context.MODE_PRIVATE) }
     private val previewViews = mutableMapOf<String, TextView>()
+    private var previewBackground: View? = null
+    private var previewOverlay: View? = null
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -75,8 +77,12 @@ class SettingsActivity : Activity() {
         )
         listOf(R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6)
             .forEachIndexed { index, id -> preview.findViewById<TextView>(id).text = previewDaily[index] }
-        preview.findViewById<View>(R.id.weather_background).setBackgroundColor(Color.rgb(48, 75, 96))
-        preview.findViewById<View>(R.id.weather_background).alpha = 0.35f
+        previewBackground = preview.findViewById(R.id.weather_background)
+        previewOverlay = preview.findViewById(R.id.weather_overlay)
+        val backgroundOpacity = prefs.getInt("background_opacity", 100) / 100f
+        previewBackground?.setBackgroundColor(Color.rgb(48, 75, 96))
+        previewBackground?.alpha = backgroundOpacity
+        previewOverlay?.alpha = backgroundOpacity
         listOf(
             "size_location" to R.id.location,
             "size_temperature" to R.id.temperature,
@@ -97,13 +103,21 @@ class SettingsActivity : Activity() {
         ))
 
         root.addView(TextView(this).apply {
-            text = "DIMENSIUNE TEXT"
+            text = "ASPECT FUNDAL"
             textSize = 12f
             setTextColor(Color.rgb(175, 200, 218))
             typeface = Typeface.DEFAULT_BOLD
             setPadding(0, dp(10), 0, dp(3))
         })
         val controls = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        addBackgroundOpacityControl(controls)
+        root.addView(TextView(this).apply {
+            text = "DIMENSIUNE TEXT"
+            textSize = 12f
+            setTextColor(Color.rgb(175, 200, 218))
+            typeface = Typeface.DEFAULT_BOLD
+            setPadding(0, dp(10), 0, dp(3))
+        })
         addTextSizeControl(controls, "Locație", "size_location", 10, 30, 22)
         addTextSizeControl(controls, "Temperatură", "size_temperature", 24, 64, 53)
         addTextSizeControl(controls, "Condiții meteo", "size_condition", 9, 24, 18)
@@ -118,7 +132,7 @@ class SettingsActivity : Activity() {
             LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
         ))
         root.addView(Button(this).apply {
-            text = "Resetează la dimensiunile implicite"
+            text = "Resetează toate setările"
             setOnClickListener {
                 prefs.edit()
                     .putInt("size_location", 22)
@@ -127,8 +141,10 @@ class SettingsActivity : Activity() {
                     .putInt("size_details", 16)
                     .putInt("size_hourly", 14)
                     .putInt("size_daily", 11)
+                    .putInt("background_opacity", 100)
                     .apply()
                 WeatherWidgetProvider.updateTextSizes(this@SettingsActivity)
+                WeatherWidgetProvider.updateBackgroundOpacity(this@SettingsActivity)
                 recreate()
             }
         }, LinearLayout.LayoutParams(
@@ -166,6 +182,38 @@ class SettingsActivity : Activity() {
         previewViews.filterKeys { it.startsWith("size_daily") }.values.forEach { it.textSize = prefs.getInt("size_daily", 11).toFloat() }
         previewViews["label_hourly"]?.textSize = (prefs.getInt("size_hourly", 14) + 1).toFloat()
         previewViews["label_daily"]?.textSize = (prefs.getInt("size_daily", 11) + 1).toFloat()
+    }
+
+    private fun addBackgroundOpacityControl(parent: LinearLayout) {
+        val current = prefs.getInt("background_opacity", 100).coerceIn(0, 100)
+        val valueLabel = TextView(this).apply {
+            text = "Opacitate fundal: $current%"
+            textSize = 14f
+            setTextColor(Color.WHITE)
+            setPadding(0, dp(7), 0, 0)
+        }
+        val seekBar = SeekBar(this).apply {
+            max = 100
+            progress = current
+            setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
+                    valueLabel.text = "Opacitate fundal: $progress%"
+                    if (fromUser) {
+                        prefs.edit().putInt("background_opacity", progress).apply()
+                        val alpha = progress / 100f
+                        previewBackground?.alpha = alpha
+                        previewOverlay?.alpha = alpha
+                        WeatherWidgetProvider.updateBackgroundOpacity(this@SettingsActivity)
+                    }
+                }
+                override fun onStartTrackingTouch(seekBar: SeekBar?) {}
+                override fun onStopTrackingTouch(seekBar: SeekBar?) {}
+            })
+        }
+        parent.addView(valueLabel)
+        parent.addView(seekBar, LinearLayout.LayoutParams(
+            LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT
+        ).apply { bottomMargin = dp(8) })
     }
 
     private fun addTextSizeControl(
