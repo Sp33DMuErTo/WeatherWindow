@@ -11,8 +11,8 @@ android {
         applicationId = "ro.weatherwindow"
         minSdk = 26
         targetSdk = 35
-        versionCode = 40
-        versionName = "1.39"
+        versionCode = 41
+        versionName = "1.40"
     }
 
     signingConfigs {
@@ -39,7 +39,8 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
-    dependencies {
-        implementation("androidx.work:work-runtime-ktx:2.10.1")
-    }
+}
+
+dependencies {
+    implementation("androidx.work:work-runtime-ktx:2.10.1")
 }
