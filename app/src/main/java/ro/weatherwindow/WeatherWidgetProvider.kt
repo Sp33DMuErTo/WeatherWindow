@@ -110,11 +110,11 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.details, "Se simte ${weather.feelsLike}°  •  Vânt ${weather.wind} km/h  •  Apus ${weather.sunset}")
                 val hourlyIds = intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6)
                 hourlyIds.forEachIndexed { index, id ->
-                    views.setTextViewText(id, weather.hourlyColumns.getOrElse(index) { "--:--\n—\n--°\n--%" })
+                    views.setTextViewText(id, weather.hourlyColumns.getOrElse(index) { "--:--\n--°\n— --%" })
                 }
                 val dailyIds = intArrayOf(R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6)
                 dailyIds.forEachIndexed { index, id ->
-                    views.setTextViewText(id, weather.dailyColumns.getOrElse(index) { "--\n--°/--°\n—\n--%" })
+                    views.setTextViewText(id, weather.dailyColumns.getOrElse(index) { "--\n--°/--°\n— --%" })
                 }
                 applyTextSizes(context, views, options)
                 applyTextColor(context, views)
