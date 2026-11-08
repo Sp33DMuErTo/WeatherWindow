@@ -276,6 +276,15 @@ class MainActivity : Activity() {
             prefs.getString("city", "Locația mea") ?: "Locația mea")
     }
 
+    private fun dayLength(sunrise: String, sunset: String): String = try {
+        val start = java.time.LocalTime.parse(sunrise)
+        val end = java.time.LocalTime.parse(sunset)
+        val minutes = java.time.Duration.between(start, end).toMinutes().coerceAtLeast(0)
+        "${minutes / 60} h ${minutes % 60} min"
+    } catch (_: Exception) {
+        "—"
+    }
+
     private fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()
 
     private fun label(text: String, size: Float, color: Int, bold: Boolean = false): TextView =
@@ -307,7 +316,8 @@ class MainActivity : Activity() {
         currentCard.addView(label(w.city, 17f, Color.rgb(203, 221, 235), true))
         currentCard.addView(label("${w.temperature}°", 48f, Color.WHITE, true))
         currentCard.addView(label("${WeatherRepository.symbol(w.code)}  ${WeatherRepository.condition(w.code)}", 19f, Color.WHITE, true))
-        currentCard.addView(label("Se simte ca ${w.feelsLike}°     •     Vânt ${w.wind} km/h     •     Răsărit ${w.sunrise}     •     Apus ${w.sunset}", 13f, Color.rgb(204, 218, 229)))
+        currentCard.addView(label("Resimțită: ${w.feelsLike}°     •     Vânt ${w.wind} km/h     •     Răsărit ${w.sunrise}     •     Apus ${w.sunset}", 13f, Color.rgb(204, 218, 229)))
+        currentCard.addView(label("Durata zilei: ${dayLength(w.sunrise, w.sunset)}", 13f, Color.rgb(204, 218, 229)))
         forecastContainer.addView(currentCard, LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT).apply {
             bottomMargin = dp(22)
         })
