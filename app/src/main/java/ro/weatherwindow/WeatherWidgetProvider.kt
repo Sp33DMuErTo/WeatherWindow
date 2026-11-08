@@ -107,7 +107,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     .putString("sunset", weather.sunset)
                     .putString("timezone", weather.timezone)
                     .apply()
-                views.setTextViewText(R.id.details, "Se simte ${weather.feelsLike}°  •  Vânt ${weather.wind} km/h  •  Apus ${weather.sunset}")
+                views.setTextViewText(R.id.details, "Se simte ${weather.feelsLike}°  •  Vânt ${weather.wind} km/h  •  Răsărit ${weather.sunrise}  •  Apus ${weather.sunset}")
                 val hourlyIds = intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6)
                 hourlyIds.forEachIndexed { index, id ->
                     views.setTextViewText(id, weather.hourlyColumns.getOrElse(index) { "--:--\n--°\n— --%" })
