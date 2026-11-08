@@ -157,8 +157,8 @@ class SettingsActivity : Activity() {
             setPadding(0, dp(10), 0, dp(3))
         })
         addTextSizeControl(controls, "Locație", "size_location", 10, 16, 12)
-        addTextSizeControl(controls, "Temperatură", "size_temperature", 24, 64, 53)
-        addTextSizeControl(controls, "Condiții meteo", "size_condition", 9, 24, 18)
+        addTextSizeControl(controls, "Temperatură", "size_temperature", 30, 53, 53)
+        addTextSizeControl(controls, "Condiții meteo", "size_condition", 10, 20, 17)
         addTextSizeControl(controls, "Detalii (resimțită, umiditate, vânt)", "size_details", 10, 12, 12)
         addTextSizeControl(controls, "Prognoză orară", "size_hourly", 8, 16, 12)
         addTextSizeControl(controls, "Prognoză 6 zile", "size_daily", 8, 16, 12)
@@ -174,7 +174,7 @@ class SettingsActivity : Activity() {
             setOnClickListener {
                 prefs.edit()
                     .putInt("shared_size_location", 12).putInt("shared_size_temperature", 53)
-                    .putInt("shared_size_condition", 18).putInt("shared_size_details", 12)
+                    .putInt("shared_size_condition", 17).putInt("shared_size_details", 12)
                     .putInt("shared_size_hourly", 12).putInt("shared_size_daily", 12)
                     .putInt("background_opacity", 100)
                     .remove("text_color_enabled").remove("text_color")
@@ -208,7 +208,7 @@ class SettingsActivity : Activity() {
         val sizes = mapOf(
             "size_location" to 12,
             "size_temperature" to 53,
-            "size_condition" to 18,
+            "size_condition" to 17,
             "size_details" to 12,
             "size_hourly" to 12,
             "size_daily" to 12
