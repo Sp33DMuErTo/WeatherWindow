@@ -21,6 +21,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
     }
 
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
+        WeatherUpdateWorker.schedule(context)
         val prefs = context.getSharedPreferences("weather", Context.MODE_PRIVATE)
         if (prefs.contains("lat")) {
             val lat = prefs.getFloat("lat", 0f).toDouble()
@@ -32,7 +33,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                     val weather = WeatherRepository.load(context, lat, lon, city)
                     updateAll(context, weather)
                 } catch (_: Exception) {
-                    updatePlaceholders(context, ids)
+                    // Keep the last successful forecast visible during temporary network/API failures.
                 } finally {
                     pendingResult.finish()
                 }
