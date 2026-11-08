@@ -170,12 +170,12 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             val fontScale = if (compact) 1.0f else 1.15f
             val contentPadding = if (compact) 5 else 11
             views.setViewPadding(R.id.widget_content, contentPadding, contentPadding, contentPadding, contentPadding)
-            views.setTextViewTextSize(R.id.location, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_location", prefs.getInt("size_location_5x4", 22)) * fontScale)
+            views.setTextViewTextSize(R.id.location, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_location", 12).coerceIn(10, 16) * fontScale)
             views.setTextViewTextSize(R.id.gps_indicator, TypedValue.COMPLEX_UNIT_SP, 16f * fontScale)
             views.setTextViewTextSize(R.id.temperature, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_temperature", prefs.getInt("size_temperature_5x4", 53)) * fontScale)
             views.setTextViewTextSize(R.id.condition, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_condition", prefs.getInt("size_condition_5x4", 18)) * fontScale)
             views.setTextViewTextSize(R.id.precipitation_probability, TypedValue.COMPLEX_UNIT_SP, 11f * fontScale)
-            views.setTextViewTextSize(R.id.details, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_details", prefs.getInt("size_details_5x4", 16)) * fontScale)
+            views.setTextViewTextSize(R.id.details, TypedValue.COMPLEX_UNIT_SP, prefs.getInt("shared_size_details", 12).coerceIn(10, 12) * fontScale)
             val hourlySize = prefs.getInt("shared_size_hourly", prefs.getInt("size_hourly_5x4", 12)).coerceIn(8, 16) * fontScale
             intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6).forEach { id ->
                 views.setTextViewTextSize(id, TypedValue.COMPLEX_UNIT_SP, hourlySize)
