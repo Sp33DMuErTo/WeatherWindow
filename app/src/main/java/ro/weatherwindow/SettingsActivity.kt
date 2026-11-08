@@ -106,10 +106,9 @@ class SettingsActivity : Activity() {
         ).map { preview.findViewById<TextView>(it) })
         previewBackground = preview.findViewById(R.id.weather_background)
         previewOverlay = preview.findViewById(R.id.weather_overlay)
+        previewBackground?.visibility = View.GONE
         val backgroundOpacity = prefs.getInt("background_opacity", 100).coerceIn(0, 100) / 100f
-        previewBackground?.setBackgroundColor(Color.rgb(48, 75, 96))
-        previewBackground?.alpha = backgroundOpacity
-        previewOverlay?.alpha = backgroundOpacity
+        previewOverlay?.alpha = backgroundOpacity * 0.22f
         listOf(
             "size_location" to R.id.location,
             "size_temperature" to R.id.temperature,
@@ -141,7 +140,7 @@ class SettingsActivity : Activity() {
         ))
 
         root.addView(TextView(this).apply {
-            text = "ASPECT FUNDAL"
+            text = "EFECT STICLĂ"
             textSize = 12f
             setTextColor(Color.rgb(175, 200, 218))
             typeface = Typeface.DEFAULT_BOLD
@@ -568,7 +567,7 @@ class SettingsActivity : Activity() {
     private fun addBackgroundOpacityControl(parent: LinearLayout) {
         val current = (((prefs.getInt("background_opacity", 100).coerceIn(0, 100) + 5) / 10) * 10)
         val valueLabel = TextView(this).apply {
-            text = "Opacitate fundal: $current%"
+            text = "Intensitate sticlă: $current%"
             textSize = 14f
             setTextColor(Color.WHITE)
             setPadding(0, dp(7), 0, 0)
@@ -579,12 +578,11 @@ class SettingsActivity : Activity() {
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                     val opacity = progress * 10
-                    valueLabel.text = "Opacitate fundal: $opacity%"
+                    valueLabel.text = "Intensitate sticlă: $opacity%"
                     if (fromUser) {
                         prefs.edit().putInt("background_opacity", opacity).apply()
-                        val alpha = opacity / 100f
-                        previewBackground?.alpha = alpha
-                        previewOverlay?.alpha = alpha
+                        previewBackground?.visibility = View.GONE
+                        previewOverlay?.alpha = (opacity / 100f) * 0.22f
                         WeatherWidgetProvider.updateBackgroundOpacity(this@SettingsActivity)
                     }
                 }
