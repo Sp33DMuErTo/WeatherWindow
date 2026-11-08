@@ -108,7 +108,7 @@ class SettingsActivity : Activity() {
         previewOverlay = preview.findViewById(R.id.weather_overlay)
         previewBackground?.visibility = View.GONE
         val backgroundOpacity = prefs.getInt("background_opacity", 100).coerceIn(0, 100) / 100f
-        previewOverlay?.alpha = backgroundOpacity * 0.22f
+        previewOverlay?.alpha = backgroundOpacity * 0.85f
         listOf(
             "size_location" to R.id.location,
             "size_temperature" to R.id.temperature,
@@ -582,7 +582,7 @@ class SettingsActivity : Activity() {
                     if (fromUser) {
                         prefs.edit().putInt("background_opacity", opacity).apply()
                         previewBackground?.visibility = View.GONE
-                        previewOverlay?.alpha = (opacity / 100f) * 0.22f
+                        previewOverlay?.alpha = (opacity / 100f) * 0.85f
                         WeatherWidgetProvider.updateBackgroundOpacity(this@SettingsActivity)
                     }
                 }
