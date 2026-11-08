@@ -83,9 +83,9 @@ class WeatherWidgetProvider : AppWidgetProvider() {
         private fun applyBackgroundOpacity(context: Context, views: RemoteViews) {
             val opacity = context.getSharedPreferences("weather", Context.MODE_PRIVATE)
                 .getInt("background_opacity", 100).coerceIn(0, 100)
-            val alpha = (opacity * 255 / 100f).toInt()
-            views.setInt(R.id.weather_background, "setImageAlpha", alpha)
-            views.setInt(R.id.weather_overlay, "setImageAlpha", alpha)
+            val glassAlpha = (opacity / 100f * 0.22f * 255).toInt()
+            views.setViewVisibility(R.id.weather_background, android.view.View.GONE)
+            views.setInt(R.id.weather_overlay, "setImageAlpha", glassAlpha)
         }
 
         fun updateAll(context: Context, weather: WeatherSnapshot) {
@@ -118,9 +118,6 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 }
                 applyTextSizes(context, views, options)
                 applyTextColor(context, views)
-                weatherBackground(context, weather.code, 0, weather.sunrise, weather.sunset, weather.timezone)?.let {
-                    views.setImageViewBitmap(R.id.weather_background, it)
-                }
                 applyBackgroundOpacity(context, views)
                 val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                 views.setOnClickPendingIntent(R.id.widget_root, open)
@@ -221,7 +218,6 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 }
                 applyTextSizes(context, views, options)
                 applyTextColor(context, views)
-                weatherBackground(context, 3)?.let { views.setImageViewBitmap(R.id.weather_background, it) }
                 applyBackgroundOpacity(context, views)
                 val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                 views.setOnClickPendingIntent(R.id.widget_root, open)
