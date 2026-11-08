@@ -214,10 +214,10 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setImageViewBitmap(R.id.weather_animation, WeatherAnimationFrames.render(3, 0))
                 views.setTextViewText(R.id.details, "Prognoză meteo Open-Meteo")
                 intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6).forEach { id ->
-                    views.setTextViewText(id, "--:--\n—\n--°\n--%")
+                    views.setTextViewText(id, "--:--\n--°\n— --%")
                 }
                 intArrayOf(R.id.daily_1, R.id.daily_2, R.id.daily_3, R.id.daily_4, R.id.daily_5, R.id.daily_6).forEach { id ->
-                    views.setTextViewText(id, "--\n--°/--°\n—\n--%")
+                    views.setTextViewText(id, "--\n--°/--°\n— --%")
                 }
                 applyTextSizes(context, views, options)
                 applyTextColor(context, views)
