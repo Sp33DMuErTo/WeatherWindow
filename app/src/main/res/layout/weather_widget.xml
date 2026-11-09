@@ -31,7 +31,7 @@
 
         <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="88dp"
+            android:layout_height="96dp"
             android:orientation="horizontal"
             android:gravity="center_vertical">
             <LinearLayout
@@ -79,8 +79,9 @@
                     android:textStyle="bold" />
             </LinearLayout>
             <LinearLayout
-                android:layout_width="124dp"
+                android:layout_width="0dp"
                 android:layout_height="match_parent"
+                android:layout_weight="1"
                 android:orientation="vertical"
                 android:gravity="center">
                 <LinearLayout
@@ -93,7 +94,8 @@
                         android:layout_width="88dp"
                         android:layout_height="62dp"
                         android:scaleType="fitCenter"
-                        android:contentDescription="Animație meteo" />
+                        android:contentDescription="Animație meteo" 
+                        android:visibility="gone"/>
                     <TextView
                         android:id="@+id/precipitation_probability"
                         android:layout_width="wrap_content"
@@ -104,7 +106,8 @@
                         android:textSize="12sp"
                         android:textStyle="bold"
                         android:gravity="center"
-                        android:maxLines="1" />
+                        android:maxLines="1" 
+                        android:visibility="gone"/>
                 </LinearLayout>
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -121,22 +124,35 @@
                         android:textSize="12sp"
                         android:gravity="end"
                         android:maxLines="2"
-                        android:ellipsize="end" />
+                        android:ellipsize="end" 
+                        android:visibility="gone"/>
 
                 </LinearLayout>
             </LinearLayout>
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/details"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
-            android:layout_marginTop="1dp"
-            android:text="Se simte --°  •  Umiditate --%  •  Vânt -- km/h"
-            android:textColor="#C2D4E2"
-            android:textSize="9sp"
-            android:maxLines="1" />
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+            <TextView
+                android:id="@+id/details"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:layout_marginTop="1dp"
+                android:text="Resimțită --° • Vânt -- km/h • Răsărit --:-- • Apus --:--"
+                android:textColor="#C2D4E2"
+                android:textSize="9sp"
+                android:maxLines="2"
+                android:ellipsize="end" />
+            <View
+                android:layout_width="0dp"
+                android:layout_height="1dp"
+                android:layout_weight="1" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"
