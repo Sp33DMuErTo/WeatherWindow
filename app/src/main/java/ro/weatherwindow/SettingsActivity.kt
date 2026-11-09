@@ -126,7 +126,7 @@ class SettingsActivity : Activity() {
         previewScroll.addView(preview, FrameLayout.LayoutParams(
             previewSize, previewSize, android.view.Gravity.CENTER
         ))
-        val previewContent = preview.findViewById<LinearLayout>(R.id.widget_content)
+        val previewContent = preview.findViewById<FrameLayout>(R.id.widget_content)
         previewContent.setPadding(dp(8), dp(8), dp(8), dp(8))
         val previewHeader = previewContent.getChildAt(0)
         previewHeader.layoutParams = previewHeader.layoutParams.apply { height = dp(70) }
