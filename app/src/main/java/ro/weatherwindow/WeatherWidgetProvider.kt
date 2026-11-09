@@ -100,7 +100,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.precipitation_probability, "${weather.precipitationProbability}%")
                 val gpsSelected = context.getSharedPreferences("weather", Context.MODE_PRIVATE).getBoolean("is_gps", false)
                 views.setViewVisibility(R.id.gps_indicator, if (gpsSelected) android.view.View.VISIBLE else android.view.View.GONE)
-                views.setImageViewBitmap(R.id.weather_animation, WeatherAnimationFrames.render(weather.code, 0))
+                views.setImageViewBitmap(R.id.weather_animation, WeatherAnimationFrames.render(weather.code, 0, weather.sunrise, weather.sunset, weather.timezone))
                 context.getSharedPreferences("weather", Context.MODE_PRIVATE).edit()
                     .putInt("weather_code", weather.code)
                     .putString("sunrise", weather.sunrise)
@@ -208,7 +208,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.temperature, "--°")
                 views.setTextViewText(R.id.condition, "Așteaptă prognoza meteo")
                 views.setTextViewText(R.id.precipitation_probability, "--%")
-                views.setImageViewBitmap(R.id.weather_animation, WeatherAnimationFrames.render(3, 0))
+                views.setImageViewBitmap(R.id.weather_animation, WeatherAnimationFrames.render(3, 0, "06:00", "18:00", "Europe/Bucharest"))
                 views.setTextViewText(R.id.details, "Prognoză meteo Open-Meteo")
                 intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6).forEach { id ->
                     views.setTextViewText(id, "--:--\n--°\n— --%")
