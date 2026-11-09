@@ -48,8 +48,14 @@ class WeatherAnimationService : Service() {
                 val layout = if (height < 250) R.layout.weather_widget_compact else R.layout.weather_widget
                 val views = RemoteViews(packageName, layout)
                 views.setImageViewBitmap(R.id.weather_animation, bitmap)
+                if (currentFrame % 50 == 0) {
+                    val background = WeatherAnimationFrames.renderBackground(code, currentFrame, sunrise, sunset, timezone)
+                    views.setImageViewBitmap(R.id.weather_background, background)
+                }
                 val opacity = prefs.getInt("background_opacity", 100).coerceIn(0, 100)
-                views.setInt(R.id.weather_overlay, "setImageAlpha", (opacity * 255 / 100f).toInt())
+                views.setViewVisibility(R.id.weather_background, android.view.View.VISIBLE)
+                views.setViewVisibility(R.id.weather_overlay, android.view.View.GONE)
+                views.setInt(R.id.weather_background, "setImageAlpha", (opacity * 255 / 100f).toInt())
                 manager.partiallyUpdateAppWidget(id, views)
             }
             handler.postDelayed(this, 100L)
@@ -119,6 +125,87 @@ internal object WeatherAnimationFrames {
     private const val W = 720
     private const val H = 300
 
+    private const val BG_H = 440
+
+    fun renderBackground(code: Int, frame: Int, sunrise: String, sunset: String, timezone: String): Bitmap {
+        val bitmap = Bitmap.createBitmap(W, BG_H, Bitmap.Config.ARGB_8888)
+        val c = Canvas(bitmap)
+        val p = Paint(Paint.ANTI_ALIAS_FLAG)
+        val now = try { LocalTime.now(ZoneId.of(timezone)) } catch (_: Exception) { LocalTime.now() }
+        val rise = try { LocalTime.parse(sunrise).toSecondOfDay() } catch (_: Exception) { 21600 }
+        val set = try { LocalTime.parse(sunset).toSecondOfDay() } catch (_: Exception) { 64800 }
+        val sec = now.toSecondOfDay()
+        val dayLength = ((set - rise + 86400) % 86400).coerceAtLeast(1)
+        val nightLength = (86400 - dayLength).coerceAtLeast(1)
+        val isDay = if (rise < set) sec in rise..set else sec >= rise || sec <= set
+        val dayElapsed = (sec - rise + 86400) % 86400
+        val nightElapsed = (sec - set + 86400) % 86400
+        val toRise = (rise - sec + 86400) % 86400
+        val toSet = (set - sec + 86400) % 86400
+        val transition = 2700f
+
+        val nightTop = Color.rgb(5, 15, 38)
+        val nightBottom = Color.rgb(17, 34, 66)
+        val dawnTop = Color.rgb(82, 91, 143)
+        val dawnBottom = Color.rgb(246, 142, 108)
+        val dayTop = Color.rgb(20, 76, 135)
+        val dayBottom = Color.rgb(52, 111, 163)
+        val duskTop = Color.rgb(112, 72, 111)
+        val duskBottom = Color.rgb(244, 125, 83)
+
+        val top: Int
+        val bottom: Int
+        when {
+            !isDay && toRise <= transition -> {
+                val t = 1f - toRise / transition
+                top = mix(nightTop, dawnTop, t)
+                bottom = mix(nightBottom, dawnBottom, t)
+            }
+            isDay && dayElapsed <= transition -> {
+                val t = dayElapsed / transition
+                top = mix(dawnTop, dayTop, t)
+                bottom = mix(dawnBottom, dayBottom, t)
+            }
+            isDay && toSet <= transition -> {
+                val t = 1f - toSet / transition
+                top = mix(dayTop, duskTop, t)
+                bottom = mix(dayBottom, duskBottom, t)
+            }
+            !isDay && nightElapsed <= transition -> {
+                val t = nightElapsed / transition
+                top = mix(duskTop, nightTop, t)
+                bottom = mix(duskBottom, nightBottom, t)
+            }
+            isDay -> { top = dayTop; bottom = dayBottom }
+            else -> { top = nightTop; bottom = nightBottom }
+        }
+
+        val weather = when {
+            code in 71..77 || code in 85..86 -> 4
+            code in 51..67 || code in 80..82 -> 3
+            code in 95..99 -> 5
+            code == 45 || code == 48 -> 6
+            code == 3 -> 2
+            code == 1 || code == 2 -> 1
+            else -> 0
+        }
+        val shade = when (weather) { 2 -> .24f; 3 -> .48f; 4 -> .18f; 5 -> .58f; 6 -> .30f; else -> 0f }
+        p.shader = LinearGradient(
+            0f, 0f, 0f, BG_H.toFloat(),
+            mix(top, Color.rgb(9, 19, 35), shade),
+            mix(bottom, Color.rgb(30, 42, 57), shade * .55f),
+            Shader.TileMode.CLAMP
+        )
+        c.drawRect(0f, 0f, W.toFloat(), BG_H.toFloat(), p)
+        p.shader = null
+
+        // A restrained lower vignette keeps the forecast text legible without a separate panel.
+        p.shader = LinearGradient(0f, 255f, 0f, BG_H.toFloat(), 0x00081722, 0x66081722, Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, W.toFloat(), BG_H.toFloat(), p)
+        p.shader = null
+        return bitmap
+    }
+
     fun render(code: Int, frame: Int, sunrise: String, sunset: String, timezone: String): Bitmap {
         val bitmap = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
         val c = Canvas(bitmap)
@@ -151,20 +238,6 @@ internal object WeatherAnimationFrames {
             code == 1 || code == 2 -> 1
             else -> 0
         }
-        val top = when {
-            !isDay -> Color.rgb(5, 15, 38)
-            dawn -> mix(Color.rgb(5, 15, 38), Color.rgb(255, 137, 86), dawnMix)
-            dusk -> mix(Color.rgb(5, 15, 38), Color.rgb(255, 130, 80), duskMix)
-            dayT < .18f -> mix(Color.rgb(20, 70, 130), Color.rgb(255, 168, 104), 1f - dayT / .18f)
-            dayT > .82f -> mix(Color.rgb(20, 70, 130), Color.rgb(255, 155, 95), (dayT - .82f) / .18f)
-            else -> Color.rgb(20, 76, 135)
-        }
-        val bottom = if (isDay) Color.rgb(52, 111, 163) else Color.rgb(17, 34, 66)
-        val shade = when (weather) { 2 -> .24f; 3 -> .48f; 4 -> .18f; 5 -> .58f; 6 -> .30f; else -> 0f }
-        p.shader = LinearGradient(0f, 0f, 0f, H.toFloat(), mix(top, Color.rgb(9, 19, 35), shade),
-            mix(bottom, Color.rgb(30, 42, 57), shade * .55f), Shader.TileMode.CLAMP)
-        c.drawRect(0f, 0f, W.toFloat(), H.toFloat(), p); p.shader = null
-
         val starAlpha = when { !isDay -> 255; dawn -> (255 * (1f - dawnMix)).toInt(); dusk -> (255 * duskMix).toInt(); else -> 0 }
         if (starAlpha > 0) {
             p.color = Color.argb(starAlpha, 225, 239, 255)
@@ -218,8 +291,6 @@ internal object WeatherAnimationFrames {
             4 -> { p.color=0xFFEAF5FA.toInt();for(i in 0 until 42){val x=((i*97+phase*3)%720).toFloat();val y=175f+((i*59+phase*5)%120);c.drawCircle(x,y,2.2f+(i%3)*1.1f,p)} }
             5 -> { p.color=if(phase%30<4) 0xFFFFE58A.toInt() else 0x88FFE58A.toInt();val bolt=Path().apply{moveTo(420f,174f);lineTo(395f,218f);lineTo(416f,218f);lineTo(401f,254f);lineTo(446f,207f);lineTo(425f,207f);close()};c.drawPath(bolt,p);p.color=0xBB9BDCF4.toInt();p.strokeWidth=2.5f;for(i in 0 until 24){val x=((i*113+phase*8)%740).toFloat();val y=190f+((i*61+phase*12)%110);c.drawLine(x,y,x-7f,y+18f,p)} }
         }
-        p.shader=LinearGradient(0f,210f,0f,H.toFloat(),0x00081722,0x99081722.toInt(),Shader.TileMode.CLAMP)
-        c.drawRect(0f,210f,W.toFloat(),H.toFloat(),p);p.shader=null
         return bitmap
     }
 
