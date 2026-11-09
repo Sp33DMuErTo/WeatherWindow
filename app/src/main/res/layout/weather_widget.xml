@@ -11,7 +11,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="centerCrop"
-        android:visibility="gone"
+        android:visibility="visible"
         android:contentDescription="@null" />
 
     <ImageView
@@ -20,6 +20,7 @@
         android:layout_height="match_parent"
         android:src="@drawable/widget_overlay"
         android:scaleType="fitXY"
+        android:visibility="gone"
         android:contentDescription="@null" />
 
     <FrameLayout
