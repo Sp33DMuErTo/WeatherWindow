@@ -11,8 +11,8 @@ android {
         applicationId = "ro.weatherwindow"
         minSdk = 26
         targetSdk = 35
-        versionCode = 42
-        versionName = "1.41"
+        versionCode = 43
+        versionName = "1.42"
     }
 
     signingConfigs {
