@@ -22,6 +22,8 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.widget.RemoteViews
+import java.time.LocalTime
+import java.time.ZoneId
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -34,13 +36,16 @@ class WeatherAnimationService : Service() {
             val prefs = getSharedPreferences("weather", Context.MODE_PRIVATE)
             val code = prefs.getInt("weather_code", 3)
             val currentFrame = frame++
-            val bitmap = WeatherAnimationFrames.render(code, currentFrame)
+            val sunrise = prefs.getString("sunrise", "06:00") ?: "06:00"
+            val sunset = prefs.getString("sunset", "18:00") ?: "18:00"
+            val timezone = prefs.getString("timezone", "Europe/Bucharest") ?: "Europe/Bucharest"
+            val bitmap = WeatherAnimationFrames.render(code, currentFrame, sunrise, sunset, timezone)
             val scene = if (currentFrame % 5 == 0) SceneBackground.render(
                 code,
                 currentFrame,
-                prefs.getString("sunrise", "06:00") ?: "06:00",
-                prefs.getString("sunset", "18:00") ?: "18:00",
-                prefs.getString("timezone", "Europe/Bucharest") ?: "Europe/Bucharest"
+                sunrise,
+                sunset,
+                timezone
             ) else null
             val manager = AppWidgetManager.getInstance(this@WeatherAnimationService)
             val ids = manager.getAppWidgetIds(ComponentName(this@WeatherAnimationService, WeatherWidgetProvider::class.java))
@@ -123,23 +128,28 @@ internal object WeatherAnimationFrames {
     private const val H = 220
     private val white = Color.rgb(245, 250, 255)
 
-    fun render(code: Int, frame: Int): Bitmap {
+    fun render(code: Int, frame: Int, sunrise: String, sunset: String, timezone: String): Bitmap {
         val bitmap = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         val p = Paint(Paint.ANTI_ALIAS_FLAG)
         val phase = frame % 48
+        val now = try { LocalTime.now(ZoneId.of(timezone)) } catch (_: Exception) { LocalTime.now() }
+        val rise = try { LocalTime.parse(sunrise) } catch (_: Exception) { LocalTime.of(6, 0) }
+        val set = try { LocalTime.parse(sunset) } catch (_: Exception) { LocalTime.of(18, 0) }
+        val isNight = now.isBefore(rise) || now.isAfter(set)
         val drift = sin(phase * 2.0 * PI / 48.0).toFloat()
         val type = when {
             code == 0 -> 0
             code == 1 || code == 2 -> 1
-            code == 3 || code == 45 || code == 48 -> 2
+            code == 3 -> 2
+            code == 45 || code == 48 -> 6
             code in 51..67 || code in 80..82 -> 3
             code in 71..77 || code in 85..86 -> 4
             code in 95..99 -> 5
             else -> 2
         }
 
-        if (type == 0 || type == 1) {
+        if ((type == 0 || type == 1) && !isNight) {
             p.shader = RadialGradient(180f, 78f, 82f, intArrayOf(0x66FFD76A, 0x00FFD76A), null, Shader.TileMode.CLAMP)
             canvas.drawCircle(180f, 78f, 82f, p)
             p.shader = null
@@ -158,6 +168,19 @@ internal object WeatherAnimationFrames {
             }
             p.color = Color.rgb(255, 211, 103)
             canvas.drawCircle(sunX, sunY, 31f, p)
+        }
+
+        if (isNight) {
+            p.color = 0xFFFFE8B4.toInt()
+            canvas.drawCircle(180f, 72f, 25f, p)
+            p.color = 0xFF263B5A.toInt()
+            canvas.drawCircle(191f, 63f, 23f, p)
+            p.color = 0x99FFFFFF.toInt()
+            for (i in 0 until 18) {
+                val x = ((i * 71 + 13) % W).toFloat()
+                val y = ((i * 43 + 7) % 105).toFloat()
+                canvas.drawCircle(x, y, if (i % 4 == 0) 2f else 1f, p)
+            }
         }
 
         if (type != 0) {
@@ -208,6 +231,14 @@ internal object WeatherAnimationFrames {
                 p.color = 0x66FFE27A
                 p.strokeWidth = 3f
                 canvas.drawLine(190f, 116f, 158f, 166f, p)
+            }
+            6 -> {
+                p.color = 0x88DCE7EF.toInt()
+                for (i in 0 until 4) {
+                    val y = 132f + i * 19f
+                    val shift = ((phase * 2 + i * 41) % 100) - 50f
+                    canvas.drawRoundRect(55f + shift, y, 300f + shift, y + 9f, 8f, 8f, p)
+                }
             }
         }
         return bitmap
