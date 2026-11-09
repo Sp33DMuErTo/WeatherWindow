@@ -124,132 +124,118 @@ class WeatherAnimationService : Service() {
 }
 
 internal object WeatherAnimationFrames {
-    private const val W = 360
-    private const val H = 220
-    private val white = Color.rgb(245, 250, 255)
+    private const val W = 720
+    private const val H = 300
 
     fun render(code: Int, frame: Int, sunrise: String, sunset: String, timezone: String): Bitmap {
         val bitmap = Bitmap.createBitmap(W, H, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(bitmap)
+        val c = Canvas(bitmap)
         val p = Paint(Paint.ANTI_ALIAS_FLAG)
-        val phase = frame % 48
         val now = try { LocalTime.now(ZoneId.of(timezone)) } catch (_: Exception) { LocalTime.now() }
-        val rise = try { LocalTime.parse(sunrise) } catch (_: Exception) { LocalTime.of(6, 0) }
-        val set = try { LocalTime.parse(sunset) } catch (_: Exception) { LocalTime.of(18, 0) }
-        val isNight = now.isBefore(rise) || now.isAfter(set)
-        val drift = sin(phase * 2.0 * PI / 48.0).toFloat()
-        val type = when {
-            code == 0 -> 0
-            code == 1 || code == 2 -> 1
-            code == 3 -> 2
-            code == 45 || code == 48 -> 6
-            code in 51..67 || code in 80..82 -> 3
+        val rise = try { LocalTime.parse(sunrise).toSecondOfDay() } catch (_: Exception) { 21600 }
+        val set = try { LocalTime.parse(sunset).toSecondOfDay() } catch (_: Exception) { 64800 }
+        val sec = now.toSecondOfDay()
+        val dayLength = ((set - rise + 86400) % 86400).coerceAtLeast(1)
+        val nightLength = 86400 - dayLength
+        val isDay = if (rise < set) sec in rise..set else sec >= rise || sec <= set
+        val dayElapsed = (sec - rise + 86400) % 86400
+        val nightElapsed = (sec - set + 86400) % 86400
+        val dayT = (dayElapsed.toFloat() / dayLength).coerceIn(0f, 1f)
+        val nightT = (nightElapsed.toFloat() / nightLength.coerceAtLeast(1)).coerceIn(0f, 1f)
+        val toRise = (rise - sec + 86400) % 86400
+        val toSet = (set - sec + 86400) % 86400
+        val dawn = !isDay && toRise <= 1800
+        val dusk = isDay && toSet <= 1800
+        val dawnMix = (1f - toRise / 1800f).coerceIn(0f, 1f)
+        val duskMix = (1f - toSet / 1800f).coerceIn(0f, 1f)
+        val phase = frame % 120
+        val drift = kotlin.math.sin(phase * 2.0 * PI / 120.0).toFloat()
+        val weather = when {
             code in 71..77 || code in 85..86 -> 4
+            code in 51..67 || code in 80..82 -> 3
             code in 95..99 -> 5
-            else -> 2
+            code == 45 || code == 48 -> 6
+            code == 3 -> 2
+            code == 1 || code == 2 -> 1
+            else -> 0
         }
-
-        if ((type == 0 || type == 1) && !isNight) {
-            p.shader = RadialGradient(180f, 78f, 82f, intArrayOf(0x66FFD76A, 0x00FFD76A), null, Shader.TileMode.CLAMP)
-            canvas.drawCircle(180f, 78f, 82f, p)
-            p.shader = null
-            val sunX = if (type == 1) 118f else 180f
-            val sunY = 76f + drift * 2f
-            p.color = Color.rgb(255, 194, 77)
-            p.strokeWidth = 8f
-            p.strokeCap = Paint.Cap.ROUND
-            for (i in 0 until 12) {
-                val a = i * PI / 6.0 + phase * 0.035
-                val x1 = sunX + cos(a).toFloat() * 39f
-                val y1 = sunY + sin(a).toFloat() * 39f
-                val x2 = sunX + cos(a).toFloat() * 53f
-                val y2 = sunY + sin(a).toFloat() * 53f
-                canvas.drawLine(x1, y1, x2, y2, p)
-            }
-            p.color = Color.rgb(255, 211, 103)
-            canvas.drawCircle(sunX, sunY, 31f, p)
+        val top = when {
+            !isDay -> Color.rgb(5, 15, 38)
+            dawn -> mix(Color.rgb(5, 15, 38), Color.rgb(255, 137, 86), dawnMix)
+            dusk -> mix(Color.rgb(5, 15, 38), Color.rgb(255, 130, 80), duskMix)
+            dayT < .18f -> mix(Color.rgb(20, 70, 130), Color.rgb(255, 168, 104), 1f - dayT / .18f)
+            dayT > .82f -> mix(Color.rgb(20, 70, 130), Color.rgb(255, 155, 95), (dayT - .82f) / .18f)
+            else -> Color.rgb(20, 76, 135)
         }
+        val bottom = if (isDay) Color.rgb(52, 111, 163) else Color.rgb(17, 34, 66)
+        val shade = when (weather) { 2 -> .24f; 3 -> .48f; 4 -> .18f; 5 -> .58f; 6 -> .30f; else -> 0f }
+        p.shader = LinearGradient(0f, 0f, 0f, H.toFloat(), mix(top, Color.rgb(9, 19, 35), shade),
+            mix(bottom, Color.rgb(30, 42, 57), shade * .55f), Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, W.toFloat(), H.toFloat(), p); p.shader = null
 
-        if (isNight) {
-            p.color = 0xFFFFE8B4.toInt()
-            canvas.drawCircle(180f, 72f, 25f, p)
-            p.color = 0xFF263B5A.toInt()
-            canvas.drawCircle(191f, 63f, 23f, p)
-            p.color = 0x99FFFFFF.toInt()
-            for (i in 0 until 18) {
-                val x = ((i * 71 + 13) % W).toFloat()
-                val y = ((i * 43 + 7) % 105).toFloat()
-                canvas.drawCircle(x, y, if (i % 4 == 0) 2f else 1f, p)
+        val starAlpha = when { !isDay -> 255; dawn -> (255 * (1f - dawnMix)).toInt(); dusk -> (255 * duskMix).toInt(); else -> 0 }
+        if (starAlpha > 0) {
+            p.color = Color.argb(starAlpha, 225, 239, 255)
+            for (i in 0 until 48) {
+                val x = ((i * 137 + 29) % 700 + 10).toFloat()
+                val y = ((i * 71 + 17) % 175 + 8).toFloat()
+                c.drawCircle(x, y, if (i % 7 == 0) 2.2f else 1.1f, p)
             }
         }
 
-        if (type != 0) {
-            val cx = if (type == 1) 218f + drift * 8f else 180f + drift * 7f
-            val cy = if (type == 1) 112f else 92f + drift * 2f
-            drawCloud(canvas, p, cx, cy, if (type == 4) 0xFFE3EDF7.toInt() else 0xFFE8F1F8.toInt())
+        val left = 72f; val right = 648f; val base = 238f; val peak = -86f
+        val arc = Path().apply { moveTo(left, base); quadTo(360f, peak, right, base) }
+        p.style = Paint.Style.STROKE; p.strokeWidth = 5f; p.strokeCap = Paint.Cap.ROUND
+        p.shader = LinearGradient(left, 0f, right, 0f,
+            intArrayOf(0xFFFFB65E.toInt(), 0xFFFFD46F.toInt(), 0xFF9ADFFF.toInt(), 0xFF62B7FF.toInt()), null, Shader.TileMode.CLAMP)
+        c.drawPath(arc, p); p.shader = null; p.style = Paint.Style.FILL
+        fun point(t0: Float): Pair<Float, Float> {
+            val t = t0.coerceIn(0f, 1f); val u = 1f - t
+            return Pair(u*u*left + 2*u*t*360f + t*t*right, u*u*base + 2*u*t*peak + t*t*base)
         }
+        fun sun(t: Float, alpha: Int) {
+            if (alpha <= 0) return
+            val (x,y)=point(t); p.alpha=alpha
+            p.shader=RadialGradient(x,y,82f,intArrayOf(0x99FFD76A.toInt(),0x00FFD76A),null,Shader.TileMode.CLAMP)
+            c.drawCircle(x,y,82f,p); p.shader=null
+            p.color=Color.argb(alpha,255,190,67); p.strokeWidth=4f; p.strokeCap=Paint.Cap.ROUND
+            for(i in 0 until 12){ val a=i*PI/6.0+frame*.003; c.drawLine(x+kotlin.math.cos(a).toFloat()*32f,y+kotlin.math.sin(a).toFloat()*32f,x+kotlin.math.cos(a).toFloat()*43f,y+kotlin.math.sin(a).toFloat()*43f,p) }
+            p.color=Color.argb(alpha,255,207,91); c.drawCircle(x,y,27f,p)
+            p.color=Color.argb(alpha,255,239,183); c.drawCircle(x-7f,y-8f,10f,p); p.alpha=255
+        }
+        fun moon(t: Float, alpha: Int) {
+            if(alpha<=0)return
+            val(x,y)=point(t); p.alpha=alpha
+            p.shader=RadialGradient(x,y,60f,intArrayOf(0x668CCBFF,0x008CCBFF),null,Shader.TileMode.CLAMP)
+            c.drawCircle(x,y,60f,p); p.shader=null
+            p.color=Color.argb(alpha,207,226,255); c.drawCircle(x,y,29f,p)
+            p.color=Color.argb(alpha,153,181,218); c.drawCircle(x-9f,y-8f,6f,p); c.drawCircle(x+11f,y+8f,8f,p); c.drawCircle(x+5f,y-15f,4f,p); p.alpha=255
+        }
+        if(isDay){ sun(dayT,if(dusk) (255*(1f-duskMix)).toInt() else 255); if(dusk) moon(0f,(255*duskMix).toInt()) }
+        else { moon(nightT,if(dawn) (255*(1f-dawnMix)).toInt() else 255); if(dawn) sun(0f,(255*dawnMix).toInt()) }
 
-        when (type) {
-            2 -> {
-                p.color = 0x99D9E8F3.toInt()
-                p.strokeWidth = 7f
-                p.strokeCap = Paint.Cap.ROUND
-                for (i in 0 until 3) {
-                    val y = 151f + i * 19f
-                    val shift = ((phase * 3 + i * 45) % 110) - 55f
-                    canvas.drawLine(75f + shift, y, 275f + shift, y, p)
-                }
-            }
-            3 -> {
-                p.color = 0xFF8ED7FF.toInt()
-                p.strokeWidth = 6f
-                p.strokeCap = Paint.Cap.ROUND
-                for (i in 0 until 12) {
-                    val x = 82f + i * 18f
-                    val y = 132f + ((phase * 8 + i * 29) % 100)
-                    canvas.drawLine(x, y, x - 11f, y + 23f, p)
-                }
-            }
-            4 -> {
-                p.color = white
-                for (i in 0 until 15) {
-                    val x = 72f + ((i * 47 + phase * 3) % 220)
-                    val y = 122f + ((i * 31 + phase * 5) % 88)
-                    val r = 3f + (i % 3)
-                    canvas.drawCircle(x.toFloat(), y.toFloat(), r, p)
-                }
-            }
-            5 -> {
-                p.color = if (phase % 12 < 3) 0xFFFFE27A.toInt() else 0x88FFE27A.toInt()
-                p.strokeWidth = 11f
-                p.strokeJoin = Paint.Join.ROUND
-                val bolt = Path().apply {
-                    moveTo(190f, 116f); lineTo(158f, 166f); lineTo(183f, 166f)
-                    lineTo(166f, 207f); lineTo(218f, 151f); lineTo(191f, 151f); close()
-                }
-                canvas.drawPath(bolt, p)
-                p.color = 0x66FFE27A
-                p.strokeWidth = 3f
-                canvas.drawLine(190f, 116f, 158f, 166f, p)
-            }
-            6 -> {
-                p.color = 0x88DCE7EF.toInt()
-                for (i in 0 until 4) {
-                    val y = 132f + i * 19f
-                    val shift = ((phase * 2 + i * 41) % 100) - 50f
-                    canvas.drawRoundRect(55f + shift, y, 300f + shift, y + 9f, 8f, 8f, p)
-                }
-            }
+        when(weather){
+            1 -> cloud(c,p,470f+drift*18f,184f,.75f,0xFFE1EAF4.toInt())
+            2 -> { cloud(c,p,245f+drift*16f,180f,.82f,0xFFD8E4EF.toInt()); cloud(c,p,530f-drift*12f,188f,.78f,0xFFBFCFDF.toInt()) }
+            3,4 -> cloud(c,p,500f+drift*10f,178f,.92f,if(weather==4) 0xFFE2EAF2.toInt() else 0xFF8299B0.toInt())
+            5 -> { cloud(c,p,245f,178f,.9f,0xFF586B82.toInt()); cloud(c,p,510f,180f,.94f,0xFF465A72.toInt()) }
+            6 -> { cloud(c,p,370f+drift*10f,188f,.82f,0xFFB8C9D8.toInt()); p.color=0x559EB7CB; for(i in 0..3){val y=205f+i*22f;val x=((phase*2+i*41)%90)-45f;c.drawRoundRect(20f+x,y,700f+x,y+8f,8f,8f,p)} }
         }
+        when(weather){
+            3 -> { p.color=0xCC9BDCF4.toInt();p.strokeWidth=2.8f;p.strokeCap=Paint.Cap.ROUND;for(i in 0 until 42){val x=((i*83+phase*7)%760-20).toFloat();val y=190f+((i*47+phase*11)%112);c.drawLine(x,y,x-7f,y+17f,p)} }
+            4 -> { p.color=0xFFEAF5FA.toInt();for(i in 0 until 42){val x=((i*97+phase*3)%720).toFloat();val y=175f+((i*59+phase*5)%120);c.drawCircle(x,y,2.2f+(i%3)*1.1f,p)} }
+            5 -> { p.color=if(phase%30<4) 0xFFFFE58A.toInt() else 0x88FFE58A.toInt();val bolt=Path().apply{moveTo(420f,174f);lineTo(395f,218f);lineTo(416f,218f);lineTo(401f,254f);lineTo(446f,207f);lineTo(425f,207f);close()};c.drawPath(bolt,p);p.color=0xBB9BDCF4.toInt();p.strokeWidth=2.5f;for(i in 0 until 24){val x=((i*113+phase*8)%740).toFloat();val y=190f+((i*61+phase*12)%110);c.drawLine(x,y,x-7f,y+18f,p)} }
+        }
+        p.shader=LinearGradient(0f,210f,0f,H.toFloat(),0x00081722,0x99081722.toInt(),Shader.TileMode.CLAMP)
+        c.drawRect(0f,210f,W.toFloat(),H.toFloat(),p);p.shader=null
         return bitmap
     }
 
-    private fun drawCloud(canvas: Canvas, p: Paint, cx: Float, cy: Float, color: Int) {
-        p.shader = RadialGradient(cx - 12f, cy - 19f, 110f, intArrayOf(0xFFFFFFFF.toInt(), color), null, Shader.TileMode.CLAMP)
-        canvas.drawCircle(cx - 38f, cy + 4f, 36f, p)
-        canvas.drawCircle(cx + 2f, cy - 20f, 48f, p)
-        canvas.drawCircle(cx + 43f, cy + 1f, 34f, p)
-        canvas.drawRoundRect(cx - 70f, cy - 4f, cx + 73f, cy + 35f, 22f, 22f, p)
-        p.shader = null
+    private fun cloud(c:Canvas,p:Paint,x:Float,y:Float,s:Float,color:Int){
+        p.shader=RadialGradient(x-18f*s,y-18f*s,130f*s,intArrayOf(0xFFF8FCFF.toInt(),color),null,Shader.TileMode.CLAMP)
+        c.drawCircle(x-42f*s,y+8f*s,34f*s,p);c.drawCircle(x,y-12f*s,47f*s,p);c.drawCircle(x+43f*s,y+7f*s,33f*s,p)
+        c.drawRoundRect(x-76f*s,y+1f*s,x+76f*s,y+38f*s,20f*s,20f*s,p);p.shader=null
+        p.color=0x33FFFFFF;c.drawCircle(x-8f*s,y-25f*s,15f*s,p)
     }
+    private fun mix(a:Int,b:Int,t0:Float):Int{val t=t0.coerceIn(0f,1f);return Color.rgb((Color.red(a)*(1-t)+Color.red(b)*t).toInt(),(Color.green(a)*(1-t)+Color.green(b)*t).toInt(),(Color.blue(a)*(1-t)+Color.blue(b)*t).toInt())}
 }
