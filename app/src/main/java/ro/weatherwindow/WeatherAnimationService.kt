@@ -40,13 +40,6 @@ class WeatherAnimationService : Service() {
             val sunset = prefs.getString("sunset", "18:00") ?: "18:00"
             val timezone = prefs.getString("timezone", "Europe/Bucharest") ?: "Europe/Bucharest"
             val bitmap = WeatherAnimationFrames.render(code, currentFrame, sunrise, sunset, timezone)
-            val scene = if (currentFrame % 5 == 0) SceneBackground.render(
-                code,
-                currentFrame,
-                sunrise,
-                sunset,
-                timezone
-            ) else null
             val manager = AppWidgetManager.getInstance(this@WeatherAnimationService)
             val ids = manager.getAppWidgetIds(ComponentName(this@WeatherAnimationService, WeatherWidgetProvider::class.java))
             ids.forEach { id ->
@@ -54,9 +47,7 @@ class WeatherAnimationService : Service() {
                 val layout = if (height < 250) R.layout.weather_widget_compact else R.layout.weather_widget
                 val views = RemoteViews(packageName, layout)
                 views.setImageViewBitmap(R.id.weather_animation, bitmap)
-                scene?.let { views.setImageViewBitmap(R.id.weather_background, it) }
                 val opacity = prefs.getInt("background_opacity", 100).coerceIn(0, 100)
-                views.setInt(R.id.weather_background, "setImageAlpha", (opacity * 255 / 100f).toInt())
                 views.setInt(R.id.weather_overlay, "setImageAlpha", (opacity * 255 / 100f).toInt())
                 manager.partiallyUpdateAppWidget(id, views)
             }
