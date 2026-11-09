@@ -83,9 +83,9 @@ class WeatherWidgetProvider : AppWidgetProvider() {
         private fun applyBackgroundOpacity(context: Context, views: RemoteViews) {
             val opacity = context.getSharedPreferences("weather", Context.MODE_PRIVATE)
                 .getInt("background_opacity", 100).coerceIn(0, 100)
-            val glassAlpha = (opacity / 100f * 0.85f * 255).toInt()
+            val backgroundAlpha = (opacity / 100f * 255).toInt()
             views.setViewVisibility(R.id.weather_background, android.view.View.GONE)
-            views.setInt(R.id.weather_overlay, "setImageAlpha", glassAlpha)
+            views.setInt(R.id.weather_overlay, "setImageAlpha", backgroundAlpha)
         }
 
         fun updateAll(context: Context, weather: WeatherSnapshot) {
