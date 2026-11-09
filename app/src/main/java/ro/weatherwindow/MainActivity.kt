@@ -8,6 +8,9 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.net.Uri
+import android.provider.Settings
+import android.app.AlertDialog
 import android.os.Bundle
 import android.os.Looper
 import android.view.Gravity
@@ -213,19 +216,35 @@ class MainActivity : Activity() {
         }
     }
 
+    private fun requestBackgroundLocationAccessIfNeeded() {
+        if (Build.VERSION.SDK_INT >= 29 &&
+            checkSelfPermission(Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            AlertDialog.Builder(this)
+                .setTitle("Actualizare GPS automată")
+                .setMessage("Pentru ca widgetul să-ți actualizeze automat localitatea când te deplasezi, WeatherWindow are nevoie de acces la locație și când aplicația nu este deschisă. În pagina de setări a aplicației intră la Permisiuni → Locație și selectează «Permite tot timpul». Dacă alegi «Doar în timpul utilizării», vremea se va actualiza, dar poziția nu va putea fi urmărită automat în fundal.")
+                .setPositiveButton("Deschide setările") { _, _ ->
+                    startActivity(android.content.Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+                }
+                .setNegativeButton("Mai târziu", null)
+                .show()
+        }
+    }
+
     private fun useGps() {
         if (checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
             checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             requestPermissions(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION), 41)
             return
         }
+        requestBackgroundLocationAccessIfNeeded()
         status.text = "Obțin locația GPS…"
         try {
             val providers = locationManager.getProviders(true)
             var best: Location? = null
             for (provider in providers) {
                 val candidate = locationManager.getLastKnownLocation(provider)
-                if (candidate != null && (best == null || candidate.accuracy < best.accuracy)) best = candidate
+                if (candidate != null && (best == null || candidate.time > best.time ||
+                    (candidate.time == best.time && candidate.accuracy < best.accuracy))) best = candidate
             }
             if (best != null) {
                 loadCoordinates(best.latitude, best.longitude, "Locația mea", true)
