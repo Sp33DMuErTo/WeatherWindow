@@ -15,6 +15,7 @@ import android.view.WindowInsets
 import android.os.Build
 import android.widget.Button
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.SeekBar
@@ -106,9 +107,17 @@ class SettingsActivity : Activity() {
         ).map { preview.findViewById<TextView>(it) })
         previewBackground = preview.findViewById(R.id.weather_background)
         previewOverlay = preview.findViewById(R.id.weather_overlay)
-        previewBackground?.visibility = View.GONE
         val backgroundOpacity = prefs.getInt("background_opacity", 100).coerceIn(0, 100) / 100f
-        previewOverlay?.alpha = backgroundOpacity
+        val previewCode = prefs.getInt("weather_code", 3)
+        val previewSunrise = prefs.getString("sunrise", "06:00") ?: "06:00"
+        val previewSunset = prefs.getString("sunset", "18:00") ?: "18:00"
+        val previewTimezone = prefs.getString("timezone", "Europe/Bucharest") ?: "Europe/Bucharest"
+        (previewBackground as? ImageView)?.apply {
+            visibility = View.VISIBLE
+            alpha = backgroundOpacity
+            setImageBitmap(WeatherAnimationFrames.renderBackground(previewCode, 0, previewSunrise, previewSunset, previewTimezone))
+        }
+        previewOverlay?.visibility = View.GONE
         listOf(
             "size_location" to R.id.location,
             "size_temperature" to R.id.temperature,
@@ -581,8 +590,8 @@ class SettingsActivity : Activity() {
                     valueLabel.text = "Opacitate fundal: $opacity%"
                     if (fromUser) {
                         prefs.edit().putInt("background_opacity", opacity).apply()
-                        previewBackground?.visibility = View.GONE
-                        previewOverlay?.alpha = opacity / 100f
+                        previewBackground?.alpha = opacity / 100f
+                        previewOverlay?.visibility = View.GONE
                         WeatherWidgetProvider.updateBackgroundOpacity(this@SettingsActivity)
                     }
                 }
