@@ -84,8 +84,9 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             val opacity = context.getSharedPreferences("weather", Context.MODE_PRIVATE)
                 .getInt("background_opacity", 100).coerceIn(0, 100)
             val backgroundAlpha = (opacity / 100f * 255).toInt()
-            views.setViewVisibility(R.id.weather_background, android.view.View.GONE)
-            views.setInt(R.id.weather_overlay, "setImageAlpha", backgroundAlpha)
+            views.setViewVisibility(R.id.weather_background, android.view.View.VISIBLE)
+            views.setViewVisibility(R.id.weather_overlay, android.view.View.GONE)
+            views.setInt(R.id.weather_background, "setImageAlpha", backgroundAlpha)
         }
 
         fun updateAll(context: Context, weather: WeatherSnapshot) {
@@ -101,6 +102,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 val gpsSelected = context.getSharedPreferences("weather", Context.MODE_PRIVATE).getBoolean("is_gps", false)
                 views.setViewVisibility(R.id.gps_indicator, if (gpsSelected) android.view.View.VISIBLE else android.view.View.GONE)
                 views.setImageViewBitmap(R.id.weather_animation, WeatherAnimationFrames.render(weather.code, 0, weather.sunrise, weather.sunset, weather.timezone))
+                views.setImageViewBitmap(R.id.weather_background, WeatherAnimationFrames.renderBackground(weather.code, 0, weather.sunrise, weather.sunset, weather.timezone))
                 context.getSharedPreferences("weather", Context.MODE_PRIVATE).edit()
                     .putInt("weather_code", weather.code)
                     .putString("sunrise", weather.sunrise)
@@ -209,6 +211,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 views.setTextViewText(R.id.condition, "Așteaptă prognoza meteo")
                 views.setTextViewText(R.id.precipitation_probability, "--%")
                 views.setImageViewBitmap(R.id.weather_animation, WeatherAnimationFrames.render(3, 0, "06:00", "18:00", "Europe/Bucharest"))
+                views.setImageViewBitmap(R.id.weather_background, WeatherAnimationFrames.renderBackground(3, 0, "06:00", "18:00", "Europe/Bucharest"))
                 views.setTextViewText(R.id.details, "Prognoză meteo Open-Meteo")
                 intArrayOf(R.id.hourly_1, R.id.hourly_2, R.id.hourly_3, R.id.hourly_4, R.id.hourly_5, R.id.hourly_6).forEach { id ->
                     views.setTextViewText(id, "--:--\n--°\n— --%")
