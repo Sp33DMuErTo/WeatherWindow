@@ -156,11 +156,6 @@
             android:layout_marginTop="0dp"
             android:background="#547084" />
         <TextView
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:layout_marginTop="1dp"
-            android:background="#547084" />
-        <TextView
             android:id="@+id/hourly_label"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
