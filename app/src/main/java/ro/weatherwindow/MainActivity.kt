@@ -291,8 +291,16 @@ class MainActivity : Activity() {
             status.text = "Alege un oraș sau folosește locația GPS."
             return
         }
-        loadCoordinates(prefs.getFloat("lat", 0f).toDouble(), prefs.getFloat("lon", 0f).toDouble(),
-            prefs.getString("city", "Locația mea") ?: "Locația mea")
+        status.text = "Actualizez prognoza meteo…"
+        thread {
+            try {
+                val snapshot = WeatherUpdateWorker.loadSavedWeather(this)
+                if (snapshot != null) runOnUiThread { showWeather(snapshot) }
+                else runOnUiThread { status.text = "Alege un oraș sau folosește locația GPS." }
+            } catch (e: Exception) {
+                runOnUiThread { status.text = "Eroare la actualizarea vremii: ${e.message ?: "conexiune indisponibilă"}" }
+            }
+        }
     }
 
     private fun dayLength(sunrise: String, sunset: String): String = try {
