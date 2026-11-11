@@ -75,6 +75,22 @@ class WeatherUpdateWorker(
     companion object {
         private const val PERIODIC_WORK = "weather_window_periodic_refresh"
         private const val INITIAL_WORK = "weather_window_initial_refresh"
+        private const val MANUAL_REFRESH_WORK = "weather_window_manual_refresh"
+
+        fun refreshNow(context: Context) {
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
+            val request = OneTimeWorkRequestBuilder<WeatherUpdateWorker>()
+                .setConstraints(constraints)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.SECONDS)
+                .build()
+            WorkManager.getInstance(context.applicationContext).enqueueUniqueWork(
+                MANUAL_REFRESH_WORK,
+                ExistingWorkPolicy.REPLACE,
+                request
+            )
+        }
 
         fun schedule(context: Context) {
             val constraints = Constraints.Builder()
