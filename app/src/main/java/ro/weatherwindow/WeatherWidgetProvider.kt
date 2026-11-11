@@ -48,6 +48,17 @@ class WeatherWidgetProvider : AppWidgetProvider() {
     companion object {
         const val ACTION_REFRESH_WEATHER = "ro.weatherwindow.action.REFRESH_WEATHER"
 
+        fun setRefreshing(context: Context, refreshing: Boolean) {
+            val manager = AppWidgetManager.getInstance(context)
+            val ids = manager.getAppWidgetIds(ComponentName(context, WeatherWidgetProvider::class.java))
+            ids.forEach { id ->
+                val views = RemoteViews(context.packageName, widgetLayout(manager.getAppWidgetOptions(id)))
+                views.setViewVisibility(R.id.refresh_weather, if (refreshing) android.view.View.GONE else android.view.View.VISIBLE)
+                views.setViewVisibility(R.id.refresh_progress, if (refreshing) android.view.View.VISIBLE else android.view.View.GONE)
+                manager.updateAppWidget(id, views)
+            }
+        }
+
         fun updateTextSizes(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, WeatherWidgetProvider::class.java))
