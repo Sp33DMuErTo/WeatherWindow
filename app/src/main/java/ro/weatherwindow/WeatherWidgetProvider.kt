@@ -7,7 +7,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.graphics.Bitmap
 import android.graphics.Color
 import android.util.TypedValue
 import android.widget.RemoteViews
