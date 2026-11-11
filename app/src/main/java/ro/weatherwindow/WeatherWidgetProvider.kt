@@ -9,8 +9,6 @@ import android.content.Intent
 import android.os.Bundle
 import android.graphics.Bitmap
 import android.graphics.Color
-import android.graphics.BitmapFactory
-import android.util.Base64
 import android.util.TypedValue
 import android.widget.RemoteViews
 
@@ -42,8 +40,6 @@ class WeatherWidgetProvider : AppWidgetProvider() {
     }
 
     companion object {
-        private val backgroundCache = mutableMapOf<Int, Bitmap>()
-
         fun updateTextSizes(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, WeatherWidgetProvider::class.java))
@@ -190,16 +186,6 @@ class WeatherWidgetProvider : AppWidgetProvider() {
             views.setTextViewTextSize(R.id.daily_label, TypedValue.COMPLEX_UNIT_SP, dailySize + fontScale)
         }
 
-        private fun weatherBackground(
-            context: Context,
-            code: Int,
-            frame: Int = 0,
-            sunrise: String = "06:00",
-            sunset: String = "18:00",
-            timezone: String = "Europe/Bucharest"
-        ): Bitmap? = try {
-            SceneBackground.render(code, frame, sunrise, sunset, timezone)
-        } catch (_: Exception) { null }
 
         private fun updatePlaceholders(context: Context, ids: IntArray) {
             ids.forEach { id ->
