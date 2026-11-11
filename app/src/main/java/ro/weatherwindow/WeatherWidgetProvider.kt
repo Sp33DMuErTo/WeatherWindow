@@ -55,7 +55,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 val views = RemoteViews(context.packageName, widgetLayout(manager.getAppWidgetOptions(id)))
                 views.setViewVisibility(R.id.refresh_weather, if (refreshing) android.view.View.GONE else android.view.View.VISIBLE)
                 views.setViewVisibility(R.id.refresh_progress, if (refreshing) android.view.View.VISIBLE else android.view.View.GONE)
-                manager.updateAppWidget(id, views)
+                manager.partiallyUpdateAppWidget(id, views)
             }
         }
 
