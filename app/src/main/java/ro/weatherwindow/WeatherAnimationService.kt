@@ -90,7 +90,14 @@ class WeatherAnimationService : Service() {
         handler.post(ticker)
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        // A screen-unlock broadcast can arrive after Android has throttled the
+        // animation loop during Doze. Force an immediate fresh frame using the
+        // current local time, rather than waiting for the old ticker cadence.
+        handler.removeCallbacks(ticker)
+        handler.post(ticker)
+        return START_STICKY
+    }
 
     override fun onDestroy() {
         handler.removeCallbacks(ticker)
@@ -113,10 +120,29 @@ class WeatherAnimationService : Service() {
         private const val CHANNEL_ID = "weather_animation"
         private const val NOTIFICATION_ID = 7101
 
-        fun start(context: Context) {
-            val intent = Intent(context, WeatherAnimationService::class.java)
+        fun start(context: Context, action: String? = null) {
+            val intent = Intent(context, WeatherAnimationService::class.java).apply {
+                this.action = action
+            }
             if (Build.VERSION.SDK_INT >= 26) context.startForegroundService(intent)
             else context.startService(intent)
+        }
+    }
+}
+
+/**
+ * Requests an immediate animation redraw when the user unlocks the phone.
+ * This receiver also restarts the foreground animation service if Android
+ * reclaimed its process while the display was off.
+ */
+class WeatherScreenUnlockReceiver : android.content.BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent?) {
+        if (intent?.action == Intent.ACTION_USER_PRESENT) {
+            try {
+                WeatherAnimationService.start(context, Intent.ACTION_USER_PRESENT)
+            } catch (_: Exception) {
+                // The next normal widget/service update can recover if startup is restricted.
+            }
         }
     }
 }
