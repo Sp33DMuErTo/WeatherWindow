@@ -22,6 +22,7 @@ class WeatherUpdateWorker(
 ) : Worker(appContext, workerParams) {
 
     override fun doWork(): Result {
+        WeatherWidgetProvider.setRefreshing(applicationContext, true)
         return try {
             val weather = loadSavedWeather(applicationContext) ?: return Result.success()
             WeatherWidgetProvider.updateAll(applicationContext, weather)
@@ -29,6 +30,8 @@ class WeatherUpdateWorker(
         } catch (_: Exception) {
             // Keep the last successful forecast visible during temporary network/API failures.
             Result.retry()
+        } finally {
+            WeatherWidgetProvider.setRefreshing(applicationContext, false)
         }
     }
 
