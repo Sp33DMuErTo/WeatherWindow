@@ -12,6 +12,13 @@ import android.util.TypedValue
 import android.widget.RemoteViews
 
 class WeatherWidgetProvider : AppWidgetProvider() {
+    override fun onReceive(context: Context, intent: Intent) {
+        super.onReceive(context, intent)
+        if (intent.action == ACTION_REFRESH_WEATHER) {
+            WeatherUpdateWorker.refreshNow(context)
+        }
+    }
+
     override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, appWidgetId: Int, newOptions: Bundle) {
         super.onAppWidgetOptionsChanged(context, manager, appWidgetId, newOptions)
         updateTextSizes(context)
@@ -39,6 +46,8 @@ class WeatherWidgetProvider : AppWidgetProvider() {
     }
 
     companion object {
+        const val ACTION_REFRESH_WEATHER = "ro.weatherwindow.action.REFRESH_WEATHER"
+
         fun updateTextSizes(context: Context) {
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, WeatherWidgetProvider::class.java))
@@ -116,8 +125,11 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 applyTextSizes(context, views, options)
                 applyTextColor(context, views)
                 applyBackgroundOpacity(context, views)
-                val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-                views.setOnClickPendingIntent(R.id.widget_root, open)
+                val open = PendingIntent.getActivity(context, id, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+                views.setOnClickPendingIntent(R.id.location, open)
+                val refreshIntent = Intent(context, WeatherWidgetProvider::class.java).setAction(ACTION_REFRESH_WEATHER)
+                val refresh = PendingIntent.getBroadcast(context, id + 10000, refreshIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+                views.setOnClickPendingIntent(R.id.refresh_weather, refresh)
                 manager.updateAppWidget(id, views)
             }
         }
@@ -207,8 +219,11 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 applyTextSizes(context, views, options)
                 applyTextColor(context, views)
                 applyBackgroundOpacity(context, views)
-                val open = PendingIntent.getActivity(context, 0, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-                views.setOnClickPendingIntent(R.id.widget_root, open)
+                val open = PendingIntent.getActivity(context, id, Intent(context, MainActivity::class.java), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+                views.setOnClickPendingIntent(R.id.location, open)
+                val refreshIntent = Intent(context, WeatherWidgetProvider::class.java).setAction(ACTION_REFRESH_WEATHER)
+                val refresh = PendingIntent.getBroadcast(context, id + 10000, refreshIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+                views.setOnClickPendingIntent(R.id.refresh_weather, refresh)
                 AppWidgetManager.getInstance(context).updateAppWidget(id, views)
             }
         }
