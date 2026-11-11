@@ -32,6 +32,7 @@ import kotlin.math.sin
 class WeatherAnimationService : Service() {
     private val handler = Handler(Looper.getMainLooper())
     private var frame = 0
+    @Volatile private var forceBackgroundRefresh = true
     private val ticker = object : Runnable {
         override fun run() {
             val prefs = getSharedPreferences("weather", Context.MODE_PRIVATE)
@@ -48,7 +49,8 @@ class WeatherAnimationService : Service() {
                 val layout = if (height < 250) R.layout.weather_widget_compact else R.layout.weather_widget
                 val views = RemoteViews(packageName, layout)
                 views.setImageViewBitmap(R.id.weather_animation, bitmap)
-                if (currentFrame % 50 == 0) {
+                if (currentFrame % 50 == 0 || forceBackgroundRefresh) {
+                    forceBackgroundRefresh = false
                     val background = WeatherAnimationFrames.renderBackground(code, currentFrame, sunrise, sunset, timezone)
                     views.setImageViewBitmap(R.id.weather_background, background)
                 }
@@ -94,6 +96,7 @@ class WeatherAnimationService : Service() {
         // A screen-unlock broadcast can arrive after Android has throttled the
         // animation loop during Doze. Force an immediate fresh frame using the
         // current local time, rather than waiting for the old ticker cadence.
+        forceBackgroundRefresh = true
         handler.removeCallbacks(ticker)
         handler.post(ticker)
         return START_STICKY
