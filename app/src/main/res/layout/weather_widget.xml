@@ -334,5 +334,17 @@
                 android:includeFontPadding="false" />
         </LinearLayout>
         </LinearLayout>
+
+    <ImageButton
+        android:id="@+id/refresh_weather"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_gravity="top|end"
+        android:layout_margin="7dp"
+        android:padding="7dp"
+        android:background="@android:color/transparent"
+        android:src="@android:drawable/ic_popup_sync"
+        android:tint="#FFFFFF"
+        android:contentDescription="Actualizează vremea" />
     </FrameLayout>
 </FrameLayout>
