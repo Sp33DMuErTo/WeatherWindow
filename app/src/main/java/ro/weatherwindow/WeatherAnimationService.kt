@@ -221,17 +221,17 @@ class WeatherAnimationService : Service() {
 
         val ageSeconds = if (lastFrameStartedElapsed == 0L) -1L
             else (SystemClock.elapsedRealtime() - lastFrameStartedElapsed) / 1_000L
-        val details = "Monitor: ${clock(lastWatchdogWall)}\n" +
-            "Pornit: ${clock(lastFrameStartedWall)}\n" +
-            "Animatie desenata: ${clock(lastAnimationRenderedWall)}\n" +
-            "Manager obtinut: ${clock(lastManagerObtainedWall)}\n" +
-            "Widgeturi gasite: ${clock(lastWidgetsFoundWall)}\n" +
-            "Fundal verificat: ${clock(lastBackgroundCheckedWall)}\n" +
-            "Widget pregatit: ${clock(lastWidgetPreparedWall)}\n" +
-            "Trimis: ${clock(lastDispatchCompletedWall)}\n" +
-            "Vechime ultim cadru început: ${if (ageSeconds < 0) "necunoscută" else "${ageSeconds}s"}\n" +
-            "Recuperări automate: $automaticRecoveryCount/$MAX_AUTOMATIC_RECOVERIES\n" +
-            "Ultima eroare: $lastFrameError"
+        val details = "Monitor: ${clock(lastWatchdogWall)}; " +
+            "Pornit: ${clock(lastFrameStartedWall)}; " +
+            "Animatie: ${clock(lastAnimationRenderedWall)}; " +
+            "Manager: ${clock(lastManagerObtainedWall)}; " +
+            "Widgeturi: ${clock(lastWidgetsFoundWall)}; " +
+            "Fundal: ${clock(lastBackgroundCheckedWall)}; " +
+            "Pregatit: ${clock(lastWidgetPreparedWall)}; " +
+            "Trimis: ${clock(lastDispatchCompletedWall)}; " +
+            "Vechime cadru: ${if (ageSeconds < 0) "necunoscuta" else "${ageSeconds}s"}; " +
+            "Recuperari: $automaticRecoveryCount/$MAX_AUTOMATIC_RECOVERIES; " +
+            "Eroare: $lastFrameError"
 
         val open = PendingIntent.getActivity(
             this, 7102, Intent(this, MainActivity::class.java),
