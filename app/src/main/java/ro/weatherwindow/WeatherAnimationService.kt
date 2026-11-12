@@ -20,7 +20,6 @@ import android.graphics.RadialGradient
 import android.graphics.Shader
 import android.os.Build
 import android.os.Handler
-import android.os.Looper
 import android.os.SystemClock
 import android.os.IBinder
 import android.widget.RemoteViews
@@ -35,7 +34,9 @@ class WeatherAnimationService : Service() {
     private lateinit var animationThread: android.os.HandlerThread
     private lateinit var handler: Handler
     private var frame = 0
-    private val mainHandler = Handler(Looper.getMainLooper())
+    private lateinit var diagnosticThread: android.os.HandlerThread
+    private lateinit var diagnosticHandler: Handler
+    @Volatile private var lastWatchdogWall = 0L
     @Volatile private var lastFrameStartedWall = 0L
     @Volatile private var lastRenderCompletedWall = 0L
     @Volatile private var lastDispatchCompletedWall = 0L
@@ -43,12 +44,15 @@ class WeatherAnimationService : Service() {
     @Volatile private var lastFrameError = "niciuna"
     @Volatile private var forceBackgroundRefresh = true
 
-    // Runs on the main looper, independently of the animation HandlerThread.
-    // It keeps diagnostics visible even if frame rendering or widget dispatch stalls.
+    // Runs on a dedicated thread, independently of both the animation thread
+    // and Android's main looper. This lets us distinguish a main-thread stall
+    // from a service-process stop: the monitor timestamp advances only while
+    // this process and its diagnostic thread are alive.
     private val diagnosticWatchdog = object : Runnable {
         override fun run() {
+            lastWatchdogWall = System.currentTimeMillis()
             updateDiagnosticNotification()
-            mainHandler.postDelayed(this, 5_000L)
+            diagnosticHandler.postDelayed(this, 5_000L)
         }
     }
     private val ticker = object : Runnable {
@@ -128,7 +132,12 @@ class WeatherAnimationService : Service() {
         ).apply { start() }
         handler = Handler(animationThread.looper)
         handler.post(ticker)
-        mainHandler.postDelayed(diagnosticWatchdog, 5_000L)
+        diagnosticThread = android.os.HandlerThread(
+            "WeatherWindowDiagnostics",
+            android.os.Process.THREAD_PRIORITY_BACKGROUND
+        ).apply { start() }
+        diagnosticHandler = Handler(diagnosticThread.looper)
+        diagnosticHandler.post(diagnosticWatchdog)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -144,7 +153,8 @@ class WeatherAnimationService : Service() {
     }
 
     override fun onDestroy() {
-        mainHandler.removeCallbacks(diagnosticWatchdog)
+        if (::diagnosticHandler.isInitialized) diagnosticHandler.removeCallbacks(diagnosticWatchdog)
+        if (::diagnosticThread.isInitialized) diagnosticThread.quitSafely()
         if (::handler.isInitialized) handler.removeCallbacks(ticker)
         if (::animationThread.isInitialized) animationThread.quitSafely()
         super.onDestroy()
@@ -162,7 +172,8 @@ class WeatherAnimationService : Service() {
 
         val ageSeconds = if (lastFrameStartedElapsed == 0L) -1L
             else (SystemClock.elapsedRealtime() - lastFrameStartedElapsed) / 1_000L
-        val details = "Pornit: ${clock(lastFrameStartedWall)}\n" +
+        val details = "Monitor: ${clock(lastWatchdogWall)}\n" +
+            "Pornit: ${clock(lastFrameStartedWall)}\n" +
             "Randat: ${clock(lastRenderCompletedWall)}\n" +
             "Trimis: ${clock(lastDispatchCompletedWall)}\n" +
             "Vechime ultim cadru început: ${if (ageSeconds < 0) "necunoscută" else "${ageSeconds}s"}\n" +
@@ -181,7 +192,7 @@ class WeatherAnimationService : Service() {
         val notification = builder
             .setSmallIcon(android.R.drawable.ic_menu_compass)
             .setContentTitle("WeatherWindow – diagnostic")
-            .setContentText("Start ${clock(lastFrameStartedWall)} · Randat ${clock(lastRenderCompletedWall)} · Trimis ${clock(lastDispatchCompletedWall)}")
+            .setContentText("Monitor ${clock(lastWatchdogWall)} · Start ${clock(lastFrameStartedWall)} · Randat ${clock(lastRenderCompletedWall)} · Trimis ${clock(lastDispatchCompletedWall)}")
             .setStyle(Notification.BigTextStyle().bigText(details))
             .setContentIntent(open)
             .setOngoing(true)
