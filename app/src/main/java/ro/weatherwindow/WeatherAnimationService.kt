@@ -20,6 +20,8 @@ import android.graphics.RadialGradient
 import android.graphics.Shader
 import android.os.Build
 import android.os.Handler
+import android.os.Looper
+import android.os.SystemClock
 import android.os.IBinder
 import android.widget.RemoteViews
 import java.time.LocalTime
@@ -33,11 +35,27 @@ class WeatherAnimationService : Service() {
     private lateinit var animationThread: android.os.HandlerThread
     private lateinit var handler: Handler
     private var frame = 0
-    private var lastDiagnosticNotificationAt = 0L
+    private val mainHandler = Handler(Looper.getMainLooper())
+    @Volatile private var lastFrameStartedWall = 0L
+    @Volatile private var lastRenderCompletedWall = 0L
+    @Volatile private var lastDispatchCompletedWall = 0L
+    @Volatile private var lastFrameStartedElapsed = 0L
+    @Volatile private var lastFrameError = "niciuna"
     @Volatile private var forceBackgroundRefresh = true
+
+    // Runs on the main looper, independently of the animation HandlerThread.
+    // It keeps diagnostics visible even if frame rendering or widget dispatch stalls.
+    private val diagnosticWatchdog = object : Runnable {
+        override fun run() {
+            updateDiagnosticNotification()
+            mainHandler.postDelayed(this, 5_000L)
+        }
+    }
     private val ticker = object : Runnable {
         override fun run() {
             try {
+                lastFrameStartedWall = System.currentTimeMillis()
+                lastFrameStartedElapsed = SystemClock.elapsedRealtime()
                 val prefs = getSharedPreferences("weather", Context.MODE_PRIVATE)
                 val code = prefs.getInt("weather_code", 3)
                 val currentFrame = frame++
@@ -51,6 +69,7 @@ class WeatherAnimationService : Service() {
                 val background = if (refreshBackground) {
                     WeatherAnimationFrames.renderBackground(code, currentFrame, sunrise, sunset, timezone)
                 } else null
+                lastRenderCompletedWall = System.currentTimeMillis()
                 forceBackgroundRefresh = false
 
                 ids.forEach { id ->
@@ -65,8 +84,12 @@ class WeatherAnimationService : Service() {
                     views.setInt(R.id.weather_background, "setImageAlpha", (opacity * 255 / 100f).toInt())
                     manager.partiallyUpdateAppWidget(id, views)
                 }
-                if (ids.isNotEmpty()) updateDiagnosticNotification()
+                if (ids.isNotEmpty()) {
+                    lastDispatchCompletedWall = System.currentTimeMillis()
+                    lastFrameError = "niciuna"
+                }
             } catch (e: Exception) {
+                lastFrameError = e.javaClass.simpleName + ": " + (e.message ?: "fără detalii")
                 android.util.Log.e("WeatherWindowAnimation", "Frame update failed; animation loop will retry", e)
             } finally {
                 if (::handler.isInitialized) handler.postDelayed(this, 100L)
@@ -105,6 +128,7 @@ class WeatherAnimationService : Service() {
         ).apply { start() }
         handler = Handler(animationThread.looper)
         handler.post(ticker)
+        mainHandler.postDelayed(diagnosticWatchdog, 5_000L)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -120,6 +144,7 @@ class WeatherAnimationService : Service() {
     }
 
     override fun onDestroy() {
+        mainHandler.removeCallbacks(diagnosticWatchdog)
         if (::handler.isInitialized) handler.removeCallbacks(ticker)
         if (::animationThread.isInitialized) animationThread.quitSafely()
         super.onDestroy()
@@ -127,14 +152,22 @@ class WeatherAnimationService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    // Temporary diagnostic heartbeat (test build): update the ongoing notification only
-    // after a successful widget frame dispatch, at most once every 5 seconds.
+    // Independent main-thread watchdog reports the last completed phase.
     private fun updateDiagnosticNotification() {
         val now = System.currentTimeMillis()
-        if (now - lastDiagnosticNotificationAt < 5_000L) return
-        lastDiagnosticNotificationAt = now
-        val time = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
-            .format(java.util.Date(now))
+        fun clock(value: Long): String =
+            if (value == 0L) "--:--:--"
+            else java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+                .format(java.util.Date(value))
+
+        val ageSeconds = if (lastFrameStartedElapsed == 0L) -1L
+            else (SystemClock.elapsedRealtime() - lastFrameStartedElapsed) / 1_000L
+        val details = "Pornit: ${clock(lastFrameStartedWall)}\n" +
+            "Randat: ${clock(lastRenderCompletedWall)}\n" +
+            "Trimis: ${clock(lastDispatchCompletedWall)}\n" +
+            "Vechime ultim cadru început: ${if (ageSeconds < 0) "necunoscută" else "${ageSeconds}s"}\n" +
+            "Ultima eroare: $lastFrameError"
+
         val open = PendingIntent.getActivity(
             this, 7102, Intent(this, MainActivity::class.java),
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -148,7 +181,8 @@ class WeatherAnimationService : Service() {
         val notification = builder
             .setSmallIcon(android.R.drawable.ic_menu_compass)
             .setContentTitle("WeatherWindow – diagnostic")
-            .setContentText("Ultimul cadru trimis: $time")
+            .setContentText("Start ${clock(lastFrameStartedWall)} · Randat ${clock(lastRenderCompletedWall)} · Trimis ${clock(lastDispatchCompletedWall)}")
+            .setStyle(Notification.BigTextStyle().bigText(details))
             .setContentIntent(open)
             .setOngoing(true)
             .setCategory(Notification.CATEGORY_SERVICE)
