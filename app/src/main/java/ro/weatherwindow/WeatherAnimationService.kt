@@ -30,37 +30,46 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 class WeatherAnimationService : Service() {
-    private val handler = Handler(Looper.getMainLooper())
+    // Render frames and dispatch RemoteViews away from Android's main thread.
+    private lateinit var animationThread: android.os.HandlerThread
+    private lateinit var handler: Handler
     private var frame = 0
     @Volatile private var forceBackgroundRefresh = true
     private val ticker = object : Runnable {
         override fun run() {
-            val prefs = getSharedPreferences("weather", Context.MODE_PRIVATE)
-            val code = prefs.getInt("weather_code", 3)
-            val currentFrame = frame++
-            val sunrise = prefs.getString("sunrise", "06:00") ?: "06:00"
-            val sunset = prefs.getString("sunset", "18:00") ?: "18:00"
-            val timezone = prefs.getString("timezone", "Europe/Bucharest") ?: "Europe/Bucharest"
-            val bitmap = WeatherAnimationFrames.render(code, currentFrame, sunrise, sunset, timezone)
-            val manager = AppWidgetManager.getInstance(this@WeatherAnimationService)
-            val ids = manager.getAppWidgetIds(ComponentName(this@WeatherAnimationService, WeatherWidgetProvider::class.java))
-            ids.forEach { id ->
-                val height = manager.getAppWidgetOptions(id).getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 280)
-                val layout = if (height < 250) R.layout.weather_widget_compact else R.layout.weather_widget
-                val views = RemoteViews(packageName, layout)
-                views.setImageViewBitmap(R.id.weather_animation, bitmap)
-                if (currentFrame % 50 == 0 || forceBackgroundRefresh) {
-                    forceBackgroundRefresh = false
-                    val background = WeatherAnimationFrames.renderBackground(code, currentFrame, sunrise, sunset, timezone)
-                    views.setImageViewBitmap(R.id.weather_background, background)
+            try {
+                val prefs = getSharedPreferences("weather", Context.MODE_PRIVATE)
+                val code = prefs.getInt("weather_code", 3)
+                val currentFrame = frame++
+                val sunrise = prefs.getString("sunrise", "06:00") ?: "06:00"
+                val sunset = prefs.getString("sunset", "18:00") ?: "18:00"
+                val timezone = prefs.getString("timezone", "Europe/Bucharest") ?: "Europe/Bucharest"
+                val bitmap = WeatherAnimationFrames.render(code, currentFrame, sunrise, sunset, timezone)
+                val manager = AppWidgetManager.getInstance(this@WeatherAnimationService)
+                val ids = manager.getAppWidgetIds(ComponentName(this@WeatherAnimationService, WeatherWidgetProvider::class.java))
+                val refreshBackground = currentFrame % 50 == 0 || forceBackgroundRefresh
+                val background = if (refreshBackground) {
+                    WeatherAnimationFrames.renderBackground(code, currentFrame, sunrise, sunset, timezone)
+                } else null
+                forceBackgroundRefresh = false
+
+                ids.forEach { id ->
+                    val height = manager.getAppWidgetOptions(id).getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 280)
+                    val layout = if (height < 250) R.layout.weather_widget_compact else R.layout.weather_widget
+                    val views = RemoteViews(packageName, layout)
+                    views.setImageViewBitmap(R.id.weather_animation, bitmap)
+                    background?.let { views.setImageViewBitmap(R.id.weather_background, it) }
+                    val opacity = prefs.getInt("background_opacity", 100).coerceIn(0, 100)
+                    views.setViewVisibility(R.id.weather_background, android.view.View.VISIBLE)
+                    views.setViewVisibility(R.id.weather_overlay, android.view.View.GONE)
+                    views.setInt(R.id.weather_background, "setImageAlpha", (opacity * 255 / 100f).toInt())
+                    manager.partiallyUpdateAppWidget(id, views)
                 }
-                val opacity = prefs.getInt("background_opacity", 100).coerceIn(0, 100)
-                views.setViewVisibility(R.id.weather_background, android.view.View.VISIBLE)
-                views.setViewVisibility(R.id.weather_overlay, android.view.View.GONE)
-                views.setInt(R.id.weather_background, "setImageAlpha", (opacity * 255 / 100f).toInt())
-                manager.partiallyUpdateAppWidget(id, views)
+            } catch (e: Exception) {
+                android.util.Log.e("WeatherWindowAnimation", "Frame update failed; animation loop will retry", e)
+            } finally {
+                if (::handler.isInitialized) handler.postDelayed(this, 100L)
             }
-            handler.postDelayed(this, 100L)
         }
     }
 
@@ -89,6 +98,11 @@ class WeatherAnimationService : Service() {
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }
+        animationThread = android.os.HandlerThread(
+            "WeatherWindowAnimation",
+            android.os.Process.THREAD_PRIORITY_DEFAULT
+        ).apply { start() }
+        handler = Handler(animationThread.looper)
         handler.post(ticker)
     }
 
@@ -97,13 +111,16 @@ class WeatherAnimationService : Service() {
         // animation loop during Doze. Force an immediate fresh frame using the
         // current local time, rather than waiting for the old ticker cadence.
         forceBackgroundRefresh = true
-        handler.removeCallbacks(ticker)
-        handler.post(ticker)
+        if (::handler.isInitialized) {
+            handler.removeCallbacks(ticker)
+            handler.post(ticker)
+        }
         return START_STICKY
     }
 
     override fun onDestroy() {
-        handler.removeCallbacks(ticker)
+        if (::handler.isInitialized) handler.removeCallbacks(ticker)
+        if (::animationThread.isInitialized) animationThread.quitSafely()
         super.onDestroy()
     }
 
