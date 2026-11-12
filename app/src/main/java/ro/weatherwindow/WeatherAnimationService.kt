@@ -47,6 +47,11 @@ class WeatherAnimationService : Service() {
     @Volatile private var lastBackgroundCheckedWall = 0L
     @Volatile private var lastWidgetPreparedWall = 0L
     @Volatile private var lastDispatchCompletedWall = 0L
+    @Volatile private var activePhase = "pornit"
+    @Volatile private var activePhaseStartedElapsed = 0L
+    @Volatile private var lastRecoveryWall = 0L
+    @Volatile private var lastRecoveryPhase = "niciuna"
+    @Volatile private var lastRecoveryStallSeconds = 0L
     @Volatile private var lastFrameStartedElapsed = 0L
     @Volatile private var lastFrameError = "niciuna"
     @Volatile private var forceBackgroundRefresh = true
@@ -63,9 +68,17 @@ class WeatherAnimationService : Service() {
             diagnosticHandler.postDelayed(this, 5_000L)
         }
     }
+    private fun setActivePhase(generation: Int, phase: String) {
+        if (generation == animationGeneration) {
+            activePhase = phase
+            activePhaseStartedElapsed = SystemClock.elapsedRealtime()
+        }
+    }
+
     private fun createTicker(generation: Int): Runnable = object : Runnable {
         override fun run() {
             try {
+                setActivePhase(generation, "citire preferinte")
                 lastFrameStartedWall = System.currentTimeMillis()
                 lastFrameStartedElapsed = SystemClock.elapsedRealtime()
                 val prefs = getSharedPreferences("weather", Context.MODE_PRIVATE)
@@ -74,20 +87,26 @@ class WeatherAnimationService : Service() {
                 val sunrise = prefs.getString("sunrise", "06:00") ?: "06:00"
                 val sunset = prefs.getString("sunset", "18:00") ?: "18:00"
                 val timezone = prefs.getString("timezone", "Europe/Bucharest") ?: "Europe/Bucharest"
+                setActivePhase(generation, "randare animatie")
                 val bitmap = WeatherAnimationFrames.render(code, currentFrame, sunrise, sunset, timezone)
                 lastAnimationRenderedWall = System.currentTimeMillis()
+                setActivePhase(generation, "obtinere manager")
                 val manager = AppWidgetManager.getInstance(this@WeatherAnimationService)
                 lastManagerObtainedWall = System.currentTimeMillis()
+                setActivePhase(generation, "cautare widgeturi")
                 val ids = manager.getAppWidgetIds(ComponentName(this@WeatherAnimationService, WeatherWidgetProvider::class.java))
                 lastWidgetsFoundWall = System.currentTimeMillis()
+                setActivePhase(generation, "verificare fundal")
                 val refreshBackground = currentFrame % 50 == 0 || forceBackgroundRefresh
                 val background = if (refreshBackground) {
+                    setActivePhase(generation, "randare fundal")
                     WeatherAnimationFrames.renderBackground(code, currentFrame, sunrise, sunset, timezone)
                 } else null
                 lastBackgroundCheckedWall = System.currentTimeMillis()
                 forceBackgroundRefresh = false
 
                 ids.forEach { id ->
+                    setActivePhase(generation, "pregatire widget #$id")
                     val height = manager.getAppWidgetOptions(id).getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 280)
                     val layout = if (height < 250) R.layout.weather_widget_compact else R.layout.weather_widget
                     val views = RemoteViews(packageName, layout)
@@ -98,17 +117,22 @@ class WeatherAnimationService : Service() {
                     views.setViewVisibility(R.id.weather_overlay, android.view.View.GONE)
                     views.setInt(R.id.weather_background, "setImageAlpha", (opacity * 255 / 100f).toInt())
                     lastWidgetPreparedWall = System.currentTimeMillis()
+                    setActivePhase(generation, "trimitere widget #$id")
                     manager.partiallyUpdateAppWidget(id, views)
                 }
                 if (ids.isNotEmpty()) {
                     lastDispatchCompletedWall = System.currentTimeMillis()
                     lastFrameError = "niciuna"
+                    setActivePhase(generation, "cadru trimis")
+                } else {
+                    setActivePhase(generation, "niciun widget instalat")
                 }
             } catch (e: Exception) {
                 lastFrameError = e.javaClass.simpleName + ": " + (e.message ?: "fără detalii")
                 android.util.Log.e("WeatherWindowAnimation", "Frame update failed; animation loop will retry", e)
             } finally {
                 if (generation == animationGeneration && ::handler.isInitialized) {
+                    setActivePhase(generation, "pauza 100ms")
                     handler.postDelayed(this, 100L)
                 }
             }
@@ -193,6 +217,11 @@ class WeatherAnimationService : Service() {
             now - lastAutomaticRecoveryElapsed < RECOVERY_COOLDOWN_MS) return
 
         lastAutomaticRecoveryElapsed = now
+        lastRecoveryWall = System.currentTimeMillis()
+        lastRecoveryPhase = activePhase
+        lastRecoveryStallSeconds = if (activePhaseStartedElapsed > 0L)
+            ((now - activePhaseStartedElapsed).coerceAtLeast(0L) / 1_000L)
+        else stalledFor / 1_000L
         automaticRecoveryCount++
         android.util.Log.w(
             "WeatherWindowAnimation",
@@ -221,7 +250,10 @@ class WeatherAnimationService : Service() {
 
         val ageSeconds = if (lastFrameStartedElapsed == 0L) -1L
             else (SystemClock.elapsedRealtime() - lastFrameStartedElapsed) / 1_000L
+        val phaseAgeSeconds = if (activePhaseStartedElapsed == 0L) -1L
+            else (SystemClock.elapsedRealtime() - activePhaseStartedElapsed).coerceAtLeast(0L) / 1_000L
         val details = "Monitor: ${clock(lastWatchdogWall)}; " +
+            "Faza: $activePhase (${if (phaseAgeSeconds < 0) "?" else "${phaseAgeSeconds}s"}); " +
             "Pornit: ${clock(lastFrameStartedWall)}; " +
             "Animatie: ${clock(lastAnimationRenderedWall)}; " +
             "Manager: ${clock(lastManagerObtainedWall)}; " +
@@ -231,6 +263,7 @@ class WeatherAnimationService : Service() {
             "Trimis: ${clock(lastDispatchCompletedWall)}; " +
             "Vechime cadru: ${if (ageSeconds < 0) "necunoscuta" else "${ageSeconds}s"}; " +
             "Recuperari: $automaticRecoveryCount/$MAX_AUTOMATIC_RECOVERIES; " +
+            "Ultima recuperare: ${clock(lastRecoveryWall)} / $lastRecoveryPhase / ${lastRecoveryStallSeconds}s; " +
             "Eroare: $lastFrameError"
 
         val open = PendingIntent.getActivity(
