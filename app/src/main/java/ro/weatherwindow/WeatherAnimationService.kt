@@ -34,6 +34,9 @@ class WeatherAnimationService : Service() {
     private lateinit var animationThread: android.os.HandlerThread
     private lateinit var handler: Handler
     private var frame = 0
+    @Volatile private var animationGeneration = 0
+    @Volatile private var automaticRecoveryCount = 0
+    @Volatile private var lastAutomaticRecoveryElapsed = 0L
     private lateinit var diagnosticThread: android.os.HandlerThread
     private lateinit var diagnosticHandler: Handler
     @Volatile private var lastWatchdogWall = 0L
@@ -55,11 +58,12 @@ class WeatherAnimationService : Service() {
     private val diagnosticWatchdog = object : Runnable {
         override fun run() {
             lastWatchdogWall = System.currentTimeMillis()
+            recoverAnimationThreadIfStalled()
             updateDiagnosticNotification()
             diagnosticHandler.postDelayed(this, 5_000L)
         }
     }
-    private val ticker = object : Runnable {
+    private fun createTicker(generation: Int): Runnable = object : Runnable {
         override fun run() {
             try {
                 lastFrameStartedWall = System.currentTimeMillis()
@@ -104,7 +108,9 @@ class WeatherAnimationService : Service() {
                 lastFrameError = e.javaClass.simpleName + ": " + (e.message ?: "fără detalii")
                 android.util.Log.e("WeatherWindowAnimation", "Frame update failed; animation loop will retry", e)
             } finally {
-                if (::handler.isInitialized) handler.postDelayed(this, 100L)
+                if (generation == animationGeneration && ::handler.isInitialized) {
+                    handler.postDelayed(this, 100L)
+                }
             }
         }
     }
@@ -134,12 +140,7 @@ class WeatherAnimationService : Service() {
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }
-        animationThread = android.os.HandlerThread(
-            "WeatherWindowAnimation",
-            android.os.Process.THREAD_PRIORITY_DEFAULT
-        ).apply { start() }
-        handler = Handler(animationThread.looper)
-        handler.post(ticker)
+        startAnimationThread()
         diagnosticThread = android.os.HandlerThread(
             "WeatherWindowDiagnostics",
             android.os.Process.THREAD_PRIORITY_BACKGROUND
@@ -153,24 +154,64 @@ class WeatherAnimationService : Service() {
         // animation loop during Doze. Force an immediate fresh frame using the
         // current local time, rather than waiting for the old ticker cadence.
         forceBackgroundRefresh = true
-        // The ticker reschedules itself every 100 ms. Do not remove and repost it
-        // here: if a frame is currently executing, removeCallbacks() cannot cancel
-        // that running invocation, and post() would create a second animation loop.
-        // The forceBackgroundRefresh flag makes the next normal frame redraw the background.
+        // The ticker owns its cadence. The watchdog below handles a genuinely stalled
+        // animation thread; this command only requests a fresh background on the next frame.
         return START_STICKY
     }
 
     override fun onDestroy() {
         if (::diagnosticHandler.isInitialized) diagnosticHandler.removeCallbacks(diagnosticWatchdog)
         if (::diagnosticThread.isInitialized) diagnosticThread.quitSafely()
-        if (::handler.isInitialized) handler.removeCallbacks(ticker)
+        animationGeneration++
+        if (::handler.isInitialized) handler.removeCallbacksAndMessages(null)
         if (::animationThread.isInitialized) animationThread.quitSafely()
         super.onDestroy()
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    // Independent main-thread watchdog reports the last completed phase.
+    private fun startAnimationThread() {
+        val generation = ++animationGeneration
+        animationThread = android.os.HandlerThread(
+            "WeatherWindowAnimation-$generation",
+            android.os.Process.THREAD_PRIORITY_DEFAULT
+        ).apply { start() }
+        handler = Handler(animationThread.looper)
+        handler.post(createTicker(generation))
+    }
+
+    // The diagnostic thread can replace a ticker whose frame has not even started
+    // for 15 seconds. Old generations are fenced off: if a blocked frame eventually
+    // returns, its finally block cannot schedule another loop.
+    private fun recoverAnimationThreadIfStalled() {
+        val startedAt = lastFrameStartedElapsed
+        if (startedAt == 0L || automaticRecoveryCount >= MAX_AUTOMATIC_RECOVERIES) return
+        val now = SystemClock.elapsedRealtime()
+        val stalledFor = now - startedAt
+        if (stalledFor < STALL_TIMEOUT_MS) return
+        if (lastAutomaticRecoveryElapsed != 0L &&
+            now - lastAutomaticRecoveryElapsed < RECOVERY_COOLDOWN_MS) return
+
+        lastAutomaticRecoveryElapsed = now
+        automaticRecoveryCount++
+        android.util.Log.w(
+            "WeatherWindowAnimation",
+            "Animation thread stalled for ${stalledFor}ms; starting recovery ${automaticRecoveryCount}/$MAX_AUTOMATIC_RECOVERIES"
+        )
+        try {
+            if (::handler.isInitialized) handler.removeCallbacksAndMessages(null)
+            if (::animationThread.isInitialized) {
+                animationThread.interrupt()
+                animationThread.quitSafely()
+            }
+            startAnimationThread()
+        } catch (e: Exception) {
+            lastFrameError = "Recovery ${e.javaClass.simpleName}: ${e.message ?: "fără detalii"}"
+            android.util.Log.e("WeatherWindowAnimation", "Could not recover animation thread", e)
+        }
+    }
+
+    // Independent diagnostic watchdog reports the last completed phase.
     private fun updateDiagnosticNotification() {
         val now = System.currentTimeMillis()
         fun clock(value: Long): String =
@@ -189,6 +230,7 @@ class WeatherAnimationService : Service() {
             "Widget pregatit: ${clock(lastWidgetPreparedWall)}\n" +
             "Trimis: ${clock(lastDispatchCompletedWall)}\n" +
             "Vechime ultim cadru început: ${if (ageSeconds < 0) "necunoscută" else "${ageSeconds}s"}\n" +
+            "Recuperări automate: $automaticRecoveryCount/$MAX_AUTOMATIC_RECOVERIES\n" +
             "Ultima eroare: $lastFrameError"
 
         val open = PendingIntent.getActivity(
@@ -226,6 +268,9 @@ class WeatherAnimationService : Service() {
     companion object {
         private const val CHANNEL_ID = "weather_animation"
         private const val NOTIFICATION_ID = 7101
+        private const val STALL_TIMEOUT_MS = 15_000L
+        private const val RECOVERY_COOLDOWN_MS = 60_000L
+        private const val MAX_AUTOMATIC_RECOVERIES = 3
 
         fun start(context: Context, action: String? = null) {
             val intent = Intent(context, WeatherAnimationService::class.java).apply {
