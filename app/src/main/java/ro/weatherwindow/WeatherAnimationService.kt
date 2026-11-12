@@ -141,6 +141,9 @@ class WeatherAnimationService : Service() {
 class WeatherScreenUnlockReceiver : android.content.BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
         if (intent?.action == Intent.ACTION_USER_PRESENT) {
+            // If WorkManager deferred the periodic job during Doze, request a
+            // weather refresh after unlock when the last successful update is stale.
+            WeatherUpdateWorker.refreshIfStale(context)
             try {
                 WeatherAnimationService.start(context, Intent.ACTION_USER_PRESENT)
             } catch (_: Exception) {
