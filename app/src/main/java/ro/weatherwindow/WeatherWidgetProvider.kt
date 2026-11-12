@@ -105,12 +105,19 @@ class WeatherWidgetProvider : AppWidgetProvider() {
         }
 
         fun updateAll(context: Context, weather: WeatherSnapshot) {
+            val lastUpdated = System.currentTimeMillis()
+            context.getSharedPreferences("weather", Context.MODE_PRIVATE).edit()
+                .putLong("last_successful_update", lastUpdated)
+                .apply()
+            val lastUpdateTime = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault())
+                .format(java.util.Date(lastUpdated))
             val manager = AppWidgetManager.getInstance(context)
             val ids = manager.getAppWidgetIds(ComponentName(context, WeatherWidgetProvider::class.java))
             ids.forEach { id ->
                 val options = manager.getAppWidgetOptions(id)
                 val views = RemoteViews(context.packageName, widgetLayout(options))
                 views.setTextViewText(R.id.location, weather.city)
+                views.setTextViewText(R.id.last_update, "Ultima actualizare: $lastUpdateTime")
                 views.setTextViewText(R.id.temperature, "${weather.temperature}°")
                 views.setTextViewText(R.id.condition, WeatherRepository.condition(weather.code))
                 views.setTextViewText(R.id.precipitation_probability, "${weather.precipitationProbability}%")
@@ -214,6 +221,7 @@ class WeatherWidgetProvider : AppWidgetProvider() {
                 val options = AppWidgetManager.getInstance(context).getAppWidgetOptions(id)
                 val views = RemoteViews(context.packageName, widgetLayout(options))
                 views.setTextViewText(R.id.location, "WeatherWindow")
+                views.setTextViewText(R.id.last_update, "Ultima actualizare: —")
                 views.setViewVisibility(R.id.gps_indicator, android.view.View.GONE)
                 views.setTextViewText(R.id.temperature, "--°")
                 views.setTextViewText(R.id.condition, "Așteaptă prognoza meteo")
