@@ -96,6 +96,15 @@ class WeatherUpdateWorker(
             )
         }
 
+        fun refreshIfStale(context: Context, minimumAgeMinutes: Long = 30) {
+            val prefs = context.getSharedPreferences("weather", Context.MODE_PRIVATE)
+            val lastUpdated = prefs.getLong("last_successful_update", 0L)
+            val age = System.currentTimeMillis() - lastUpdated
+            if (lastUpdated == 0L || age >= TimeUnit.MINUTES.toMillis(minimumAgeMinutes)) {
+                refreshNow(context)
+            }
+        }
+
         fun schedule(context: Context) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
