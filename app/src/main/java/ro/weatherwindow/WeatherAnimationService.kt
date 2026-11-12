@@ -112,10 +112,10 @@ class WeatherAnimationService : Service() {
         // animation loop during Doze. Force an immediate fresh frame using the
         // current local time, rather than waiting for the old ticker cadence.
         forceBackgroundRefresh = true
-        if (::handler.isInitialized) {
-            handler.removeCallbacks(ticker)
-            handler.post(ticker)
-        }
+        // The ticker reschedules itself every 100 ms. Do not remove and repost it
+        // here: if a frame is currently executing, removeCallbacks() cannot cancel
+        // that running invocation, and post() would create a second animation loop.
+        // The forceBackgroundRefresh flag makes the next normal frame redraw the background.
         return START_STICKY
     }
 
