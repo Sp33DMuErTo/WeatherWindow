@@ -63,13 +63,13 @@ class WeatherAnimationService : Service() {
                 val sunset = prefs.getString("sunset", "18:00") ?: "18:00"
                 val timezone = prefs.getString("timezone", "Europe/Bucharest") ?: "Europe/Bucharest"
                 val bitmap = WeatherAnimationFrames.render(code, currentFrame, sunrise, sunset, timezone)
-                lastRenderCompletedWall = System.currentTimeMillis()
                 val manager = AppWidgetManager.getInstance(this@WeatherAnimationService)
                 val ids = manager.getAppWidgetIds(ComponentName(this@WeatherAnimationService, WeatherWidgetProvider::class.java))
                 val refreshBackground = currentFrame % 50 == 0 || forceBackgroundRefresh
                 val background = if (refreshBackground) {
                     WeatherAnimationFrames.renderBackground(code, currentFrame, sunrise, sunset, timezone)
                 } else null
+                lastRenderCompletedWall = System.currentTimeMillis()
                 forceBackgroundRefresh = false
 
                 ids.forEach { id ->
