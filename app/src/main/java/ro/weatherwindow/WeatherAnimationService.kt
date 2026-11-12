@@ -38,7 +38,11 @@ class WeatherAnimationService : Service() {
     private lateinit var diagnosticHandler: Handler
     @Volatile private var lastWatchdogWall = 0L
     @Volatile private var lastFrameStartedWall = 0L
-    @Volatile private var lastRenderCompletedWall = 0L
+    @Volatile private var lastAnimationRenderedWall = 0L
+    @Volatile private var lastManagerObtainedWall = 0L
+    @Volatile private var lastWidgetsFoundWall = 0L
+    @Volatile private var lastBackgroundCheckedWall = 0L
+    @Volatile private var lastWidgetPreparedWall = 0L
     @Volatile private var lastDispatchCompletedWall = 0L
     @Volatile private var lastFrameStartedElapsed = 0L
     @Volatile private var lastFrameError = "niciuna"
@@ -67,13 +71,16 @@ class WeatherAnimationService : Service() {
                 val sunset = prefs.getString("sunset", "18:00") ?: "18:00"
                 val timezone = prefs.getString("timezone", "Europe/Bucharest") ?: "Europe/Bucharest"
                 val bitmap = WeatherAnimationFrames.render(code, currentFrame, sunrise, sunset, timezone)
+                lastAnimationRenderedWall = System.currentTimeMillis()
                 val manager = AppWidgetManager.getInstance(this@WeatherAnimationService)
+                lastManagerObtainedWall = System.currentTimeMillis()
                 val ids = manager.getAppWidgetIds(ComponentName(this@WeatherAnimationService, WeatherWidgetProvider::class.java))
+                lastWidgetsFoundWall = System.currentTimeMillis()
                 val refreshBackground = currentFrame % 50 == 0 || forceBackgroundRefresh
                 val background = if (refreshBackground) {
                     WeatherAnimationFrames.renderBackground(code, currentFrame, sunrise, sunset, timezone)
                 } else null
-                lastRenderCompletedWall = System.currentTimeMillis()
+                lastBackgroundCheckedWall = System.currentTimeMillis()
                 forceBackgroundRefresh = false
 
                 ids.forEach { id ->
@@ -86,6 +93,7 @@ class WeatherAnimationService : Service() {
                     views.setViewVisibility(R.id.weather_background, android.view.View.VISIBLE)
                     views.setViewVisibility(R.id.weather_overlay, android.view.View.GONE)
                     views.setInt(R.id.weather_background, "setImageAlpha", (opacity * 255 / 100f).toInt())
+                    lastWidgetPreparedWall = System.currentTimeMillis()
                     manager.partiallyUpdateAppWidget(id, views)
                 }
                 if (ids.isNotEmpty()) {
@@ -174,7 +182,11 @@ class WeatherAnimationService : Service() {
             else (SystemClock.elapsedRealtime() - lastFrameStartedElapsed) / 1_000L
         val details = "Monitor: ${clock(lastWatchdogWall)}\n" +
             "Pornit: ${clock(lastFrameStartedWall)}\n" +
-            "Randat: ${clock(lastRenderCompletedWall)}\n" +
+            "Animatie desenata: ${clock(lastAnimationRenderedWall)}\n" +
+            "Manager obtinut: ${clock(lastManagerObtainedWall)}\n" +
+            "Widgeturi gasite: ${clock(lastWidgetsFoundWall)}\n" +
+            "Fundal verificat: ${clock(lastBackgroundCheckedWall)}\n" +
+            "Widget pregatit: ${clock(lastWidgetPreparedWall)}\n" +
             "Trimis: ${clock(lastDispatchCompletedWall)}\n" +
             "Vechime ultim cadru început: ${if (ageSeconds < 0) "necunoscută" else "${ageSeconds}s"}\n" +
             "Ultima eroare: $lastFrameError"
@@ -192,7 +204,7 @@ class WeatherAnimationService : Service() {
         val notification = builder
             .setSmallIcon(android.R.drawable.ic_menu_compass)
             .setContentTitle("WeatherWindow – diagnostic")
-            .setContentText("Monitor ${clock(lastWatchdogWall)} · Start ${clock(lastFrameStartedWall)} · Randat ${clock(lastRenderCompletedWall)} · Trimis ${clock(lastDispatchCompletedWall)}")
+            .setContentText("Monitor ${clock(lastWatchdogWall)} · Start ${clock(lastFrameStartedWall)} · Animatie ${clock(lastAnimationRenderedWall)} · Trimis ${clock(lastDispatchCompletedWall)}")
             .setStyle(Notification.BigTextStyle().bigText(details))
             .setContentIntent(open)
             .setOngoing(true)
