@@ -21,7 +21,6 @@ import android.graphics.Shader
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
-import android.os.Looper
 import android.widget.RemoteViews
 import java.time.LocalTime
 import java.time.ZoneId
