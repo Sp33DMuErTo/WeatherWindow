@@ -33,6 +33,7 @@ class WeatherAnimationService : Service() {
     private lateinit var animationThread: android.os.HandlerThread
     private lateinit var handler: Handler
     private var frame = 0
+    private var lastDiagnosticNotificationAt = 0L
     @Volatile private var forceBackgroundRefresh = true
     private val ticker = object : Runnable {
         override fun run() {
@@ -64,6 +65,7 @@ class WeatherAnimationService : Service() {
                     views.setInt(R.id.weather_background, "setImageAlpha", (opacity * 255 / 100f).toInt())
                     manager.partiallyUpdateAppWidget(id, views)
                 }
+                if (ids.isNotEmpty()) updateDiagnosticNotification()
             } catch (e: Exception) {
                 android.util.Log.e("WeatherWindowAnimation", "Frame update failed; animation loop will retry", e)
             } finally {
@@ -86,7 +88,7 @@ class WeatherAnimationService : Service() {
             Notification.Builder(this)
         }.setSmallIcon(android.R.drawable.ic_menu_compass)
             .setContentTitle("WeatherWindow activ")
-            .setContentText("Animația meteo rulează continuu în widget.")
+            .setContentText("Diagnostic: aștept primul cadru animat…")
             .setContentIntent(open)
             .setOngoing(true)
             .setCategory(Notification.CATEGORY_SERVICE)
@@ -124,6 +126,35 @@ class WeatherAnimationService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    // Temporary diagnostic heartbeat: update the ongoing notification only
+    // after a successful widget frame dispatch, at most once every 5 seconds.
+    private fun updateDiagnosticNotification() {
+        val now = System.currentTimeMillis()
+        if (now - lastDiagnosticNotificationAt < 5_000L) return
+        lastDiagnosticNotificationAt = now
+        val time = java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault())
+            .format(java.util.Date(now))
+        val open = PendingIntent.getActivity(
+            this, 7102, Intent(this, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        val builder = if (Build.VERSION.SDK_INT >= 26) {
+            Notification.Builder(this, CHANNEL_ID)
+        } else {
+            @Suppress("DEPRECATION")
+            Notification.Builder(this)
+        }
+        val notification = builder
+            .setSmallIcon(android.R.drawable.ic_menu_compass)
+            .setContentTitle("WeatherWindow – diagnostic")
+            .setContentText("Ultimul cadru trimis: $time")
+            .setContentIntent(open)
+            .setOngoing(true)
+            .setCategory(Notification.CATEGORY_SERVICE)
+            .build()
+        getSystemService(NotificationManager::class.java).notify(NOTIFICATION_ID, notification)
+    }
 
     private fun createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= 26) {
