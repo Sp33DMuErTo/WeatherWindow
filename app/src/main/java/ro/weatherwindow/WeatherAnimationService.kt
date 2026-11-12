@@ -127,7 +127,7 @@ class WeatherAnimationService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
-    // Temporary diagnostic heartbeat: update the ongoing notification only
+    // Temporary diagnostic heartbeat (test build): update the ongoing notification only
     // after a successful widget frame dispatch, at most once every 5 seconds.
     private fun updateDiagnosticNotification() {
         val now = System.currentTimeMillis()
