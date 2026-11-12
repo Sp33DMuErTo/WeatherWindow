@@ -20,7 +20,6 @@ import android.graphics.RadialGradient
 import android.graphics.Shader
 import android.os.Build
 import android.os.Handler
-import android.os.Looper
 import android.os.SystemClock
 import android.os.IBinder
 import android.widget.RemoteViews
