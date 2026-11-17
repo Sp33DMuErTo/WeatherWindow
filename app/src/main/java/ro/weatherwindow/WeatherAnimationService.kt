@@ -57,6 +57,35 @@ class WeatherAnimationService : Service() {
     @Volatile private var lastFrameError = "niciuna"
     @Volatile private var forceBackgroundRefresh = true
 
+    // Screen power broadcasts are registered dynamically by the running foreground
+    // service. SCREEN_OFF is not reliably delivered to manifest receivers on modern Android.
+    private val screenStateReceiver = object : android.content.BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent?) {
+            when (intent?.action) {
+                Intent.ACTION_SCREEN_OFF -> pauseAnimationThread()
+                Intent.ACTION_USER_PRESENT -> {
+                    WeatherUpdateWorker.refreshIfStale(context)
+                    resumeAnimationThread()
+                }
+            }
+        }
+    }
+    private var screenStateReceiverRegistered = false
+
+    private fun registerScreenStateReceiver() {
+        val filter = android.content.IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_USER_PRESENT)
+        }
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(screenStateReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(screenStateReceiver, filter)
+        }
+        screenStateReceiverRegistered = true
+    }
+
     // Runs on a dedicated thread, independently of both the animation thread
     // and Android's main looper. This lets us distinguish a main-thread stall
     // from a service-process stop: the monitor timestamp advances only while
@@ -165,7 +194,17 @@ class WeatherAnimationService : Service() {
         } else {
             startForeground(NOTIFICATION_ID, notification)
         }
-        startAnimationThread()
+        registerScreenStateReceiver()
+        val displayInteractive = (getSystemService(Context.POWER_SERVICE) as android.os.PowerManager).isInteractive
+        if (displayInteractive) {
+            startAnimationThread()
+        } else {
+            // A sticky service restart while the display is off must not restart the ticker.
+            animationPaused = true
+            lastFrameStartedElapsed = 0L
+            activePhase = "ecran blocat"
+            activePhaseStartedElapsed = SystemClock.elapsedRealtime()
+        }
         diagnosticThread = android.os.HandlerThread(
             "WeatherWindowDiagnostics",
             android.os.Process.THREAD_PRIORITY_BACKGROUND
@@ -186,6 +225,14 @@ class WeatherAnimationService : Service() {
     }
 
     override fun onDestroy() {
+        if (screenStateReceiverRegistered) {
+            try {
+                unregisterReceiver(screenStateReceiver)
+            } catch (_: IllegalArgumentException) {
+                // Already unregistered by the system or during teardown.
+            }
+            screenStateReceiverRegistered = false
+        }
         if (::diagnosticHandler.isInitialized) diagnosticHandler.removeCallbacks(diagnosticWatchdog)
         if (::diagnosticThread.isInitialized) diagnosticThread.quitSafely()
         animationGeneration++
@@ -350,15 +397,7 @@ class WeatherAnimationService : Service() {
  */
 class WeatherScreenUnlockReceiver : android.content.BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
-        when (intent?.action) {
-            Intent.ACTION_SCREEN_OFF -> {
-                try {
-                    WeatherAnimationService.start(context, WeatherAnimationService.ACTION_PAUSE_ANIMATION)
-                } catch (_: Exception) {
-                    // If Android restricts this command, the service remains protected by its watchdog.
-                }
-            }
-            Intent.ACTION_USER_PRESENT -> {
+        if (intent?.action == Intent.ACTION_USER_PRESENT) {
                 // If WorkManager deferred the periodic job during Doze, request a
                 // weather refresh after unlock when the last successful update is stale.
                 WeatherUpdateWorker.refreshIfStale(context)
@@ -367,7 +406,6 @@ class WeatherScreenUnlockReceiver : android.content.BroadcastReceiver() {
                 } catch (_: Exception) {
                     // The next normal widget/service update can recover if startup is restricted.
                 }
-            }
         }
     }
 }
