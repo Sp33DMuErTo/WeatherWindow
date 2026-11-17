@@ -35,6 +35,7 @@ class WeatherAnimationService : Service() {
     private lateinit var handler: Handler
     private var frame = 0
     @Volatile private var animationGeneration = 0
+    @Volatile private var animationPaused = false
     @Volatile private var automaticRecoveryCount = 0
     @Volatile private var lastAutomaticRecoveryElapsed = 0L
     private lateinit var diagnosticThread: android.os.HandlerThread
@@ -174,12 +175,13 @@ class WeatherAnimationService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        // A screen-unlock broadcast can arrive after Android has throttled the
-        // animation loop during Doze. Force an immediate fresh frame using the
-        // current local time, rather than waiting for the old ticker cadence.
-        forceBackgroundRefresh = true
-        // The ticker owns its cadence. The watchdog below handles a genuinely stalled
-        // animation thread; this command only requests a fresh background on the next frame.
+        when (intent?.action) {
+            ACTION_PAUSE_ANIMATION -> pauseAnimationThread()
+            ACTION_RESUME_ANIMATION, Intent.ACTION_USER_PRESENT -> resumeAnimationThread()
+            else -> forceBackgroundRefresh = true
+        }
+        // Keep the foreground service and diagnostic watchdog alive; only the
+        // animation ticker is paused while the display is off.
         return START_STICKY
     }
 
@@ -194,7 +196,31 @@ class WeatherAnimationService : Service() {
 
     override fun onBind(intent: Intent?): IBinder? = null
 
+    private fun pauseAnimationThread() {
+        if (animationPaused) return
+        animationPaused = true
+        animationGeneration++ // Fence off any frame that returns after the screen is off.
+        if (::handler.isInitialized) handler.removeCallbacksAndMessages(null)
+        if (::animationThread.isInitialized) {
+            animationThread.interrupt()
+            animationThread.quitSafely()
+        }
+        lastFrameStartedElapsed = 0L
+        activePhase = "ecran blocat"
+        activePhaseStartedElapsed = SystemClock.elapsedRealtime()
+    }
+
+    private fun resumeAnimationThread() {
+        if (!animationPaused) {
+            forceBackgroundRefresh = true
+            return
+        }
+        forceBackgroundRefresh = true
+        startAnimationThread()
+    }
+
     private fun startAnimationThread() {
+        animationPaused = false
         val generation = ++animationGeneration
         animationThread = android.os.HandlerThread(
             "WeatherWindowAnimation-$generation",
@@ -209,7 +235,7 @@ class WeatherAnimationService : Service() {
     // returns, its finally block cannot schedule another loop.
     private fun recoverAnimationThreadIfStalled() {
         val startedAt = lastFrameStartedElapsed
-        if (startedAt == 0L || automaticRecoveryCount >= MAX_AUTOMATIC_RECOVERIES) return
+        if (animationPaused || startedAt == 0L || automaticRecoveryCount >= MAX_AUTOMATIC_RECOVERIES) return
         val now = SystemClock.elapsedRealtime()
         val stalledFor = now - startedAt
         if (stalledFor < STALL_TIMEOUT_MS) return
@@ -299,6 +325,8 @@ class WeatherAnimationService : Service() {
     }
 
     companion object {
+        const val ACTION_PAUSE_ANIMATION = "ro.weatherwindow.action.PAUSE_ANIMATION"
+        const val ACTION_RESUME_ANIMATION = "ro.weatherwindow.action.RESUME_ANIMATION"
         private const val CHANNEL_ID = "weather_animation"
         private const val NOTIFICATION_ID = 7101
         private const val STALL_TIMEOUT_MS = 15_000L
@@ -322,14 +350,23 @@ class WeatherAnimationService : Service() {
  */
 class WeatherScreenUnlockReceiver : android.content.BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent?) {
-        if (intent?.action == Intent.ACTION_USER_PRESENT) {
-            // If WorkManager deferred the periodic job during Doze, request a
-            // weather refresh after unlock when the last successful update is stale.
-            WeatherUpdateWorker.refreshIfStale(context)
-            try {
-                WeatherAnimationService.start(context, Intent.ACTION_USER_PRESENT)
-            } catch (_: Exception) {
-                // The next normal widget/service update can recover if startup is restricted.
+        when (intent?.action) {
+            Intent.ACTION_SCREEN_OFF -> {
+                try {
+                    WeatherAnimationService.start(context, WeatherAnimationService.ACTION_PAUSE_ANIMATION)
+                } catch (_: Exception) {
+                    // If Android restricts this command, the service remains protected by its watchdog.
+                }
+            }
+            Intent.ACTION_USER_PRESENT -> {
+                // If WorkManager deferred the periodic job during Doze, request a
+                // weather refresh after unlock when the last successful update is stale.
+                WeatherUpdateWorker.refreshIfStale(context)
+                try {
+                    WeatherAnimationService.start(context, WeatherAnimationService.ACTION_RESUME_ANIMATION)
+                } catch (_: Exception) {
+                    // The next normal widget/service update can recover if startup is restricted.
+                }
             }
         }
     }
