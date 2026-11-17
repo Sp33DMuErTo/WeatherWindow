@@ -93,6 +93,19 @@ class WeatherAnimationService : Service() {
     private val diagnosticWatchdog = object : Runnable {
         override fun run() {
             lastWatchdogWall = System.currentTimeMillis()
+
+            // Fallback for devices that do not deliver ACTION_USER_PRESENT to the
+            // dynamically registered receiver: resume only after the keyguard is gone.
+            // The display can become interactive while the lock screen is still visible.
+            if (animationPaused) {
+                val power = getSystemService(Context.POWER_SERVICE) as android.os.PowerManager
+                val keyguard = getSystemService(Context.KEYGUARD_SERVICE) as android.app.KeyguardManager
+                if (power.isInteractive && !keyguard.isKeyguardLocked) {
+                    WeatherUpdateWorker.refreshIfStale(this@WeatherAnimationService)
+                    resumeAnimationThread()
+                }
+            }
+
             recoverAnimationThreadIfStalled()
             updateDiagnosticNotification()
             diagnosticHandler.postDelayed(this, 5_000L)
